@@ -28,6 +28,7 @@ use stacks_common::util::hash::{Hash160, Sha512Trunc256Sum, to_hex};
 
 use super::clarity_store::SpecialCaseHandler;
 use super::key_value_wrapper::ValueResult;
+use std::collections::HashMap;
 use crate::vm::analysis::{AnalysisDatabase, ContractAnalysis};
 use crate::vm::contracts::Contract;
 use crate::vm::costs::{CostOverflowingMath, ExecutionCost};
@@ -136,6 +137,7 @@ pub struct ClarityDatabase<'a> {
     pub store: RollbackWrapper<'a>,
     headers_db: &'a dyn HeadersDB,
     burn_state_db: &'a dyn BurnStateDB,
+    lru_cache: HashMap<String, Contract>,
 }
 
 pub trait HeadersDB {
@@ -449,6 +451,7 @@ impl<'a> ClarityDatabase<'a> {
             store: RollbackWrapper::new(store),
             headers_db,
             burn_state_db,
+            lru_cache: HashMap::new()
         }
     }
 
@@ -461,6 +464,7 @@ impl<'a> ClarityDatabase<'a> {
             store,
             headers_db,
             burn_state_db,
+            lru_cache: HashMap::new()
         }
     }
 
@@ -861,28 +865,23 @@ impl<'a> ClarityDatabase<'a> {
             StoreType::Contract,
             ContractDataVarName::Contract.as_str(),
         );
-        let mut data: Contract = self.fetch_metadata(contract_identifier, &key)?
-            .ok_or_else(|| VmInternalError::Expect(
-                "Failed to read non-consensus contract metadata, even though contract exists in MARF."
-                .into()))?;
-        data.canonicalize_types(&self.get_clarity_epoch_version()?);
-        Ok(data)
-    }
 
-    pub fn get_contract_from_cache(
-        &mut self,
-        contract_identifier: &QualifiedContractIdentifier,
-    ) -> Result<(Contract, usize), VmExecutionError> {
-        let key = ClarityDatabase::make_metadata_key(
-            StoreType::Contract,
-            ContractDataVarName::Contract.as_str(),
-        );
-        let (mut data, size) : (Contract, usize) = self.fetch_metadata_with_size(contract_identifier, &key)?
+        let cache_key = format!("{}/{}", contract_identifier.to_string(), key);
+
+        if self.lru_cache.contains_key(&cache_key) {
+            let ast = self.lru_cache.get(&cache_key).unwrap();
+            return Ok(ast.clone());
+        }
+
+         let (mut data, size) : (Contract, usize) = self.fetch_metadata_with_size(contract_identifier, &key)?
             .ok_or_else(|| VmInternalError::Expect(
                 "Failed to read non-consensus contract metadata, even though contract exists in MARF."
                 .into()))?;
         data.canonicalize_types(&self.get_clarity_epoch_version()?);
-        Ok((data, size))
+
+       // self.lru_cache.insert(key, data.clone());
+
+        Ok(data)
     }
 
     pub fn ustx_liquid_supply_key() -> &'static str {
