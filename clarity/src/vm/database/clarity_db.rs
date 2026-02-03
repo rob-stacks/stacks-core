@@ -723,6 +723,21 @@ impl<'a> ClarityDatabase<'a> {
         }
     }
 
+    fn fetch_metadata_with_size<T>(
+        &mut self,
+        contract_identifier: &QualifiedContractIdentifier,
+        key: &str,
+    ) -> Result<Option<(T, usize)>, VmExecutionError>
+    where
+        T: ClarityDeserializable<T>,
+    {
+        let x_opt = self.store.get_metadata(contract_identifier, key)?;
+        match x_opt {
+            None => Ok(None),
+            Some(x) => T::deserialize(&x).map(|out| Some((out, x.len()))),
+        }
+    }
+
     pub fn fetch_metadata_manual<T>(
         &mut self,
         at_height: u32,
@@ -852,6 +867,22 @@ impl<'a> ClarityDatabase<'a> {
                 .into()))?;
         data.canonicalize_types(&self.get_clarity_epoch_version()?);
         Ok(data)
+    }
+
+    pub fn get_contract_from_cache(
+        &mut self,
+        contract_identifier: &QualifiedContractIdentifier,
+    ) -> Result<(Contract, usize), VmExecutionError> {
+        let key = ClarityDatabase::make_metadata_key(
+            StoreType::Contract,
+            ContractDataVarName::Contract.as_str(),
+        );
+        let (mut data, size) : (Contract, usize) = self.fetch_metadata_with_size(contract_identifier, &key)?
+            .ok_or_else(|| VmInternalError::Expect(
+                "Failed to read non-consensus contract metadata, even though contract exists in MARF."
+                .into()))?;
+        data.canonicalize_types(&self.get_clarity_epoch_version()?);
+        Ok((data, size))
     }
 
     pub fn ustx_liquid_supply_key() -> &'static str {

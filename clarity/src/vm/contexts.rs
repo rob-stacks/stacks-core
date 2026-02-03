@@ -1163,7 +1163,10 @@ impl<'a, 'b, 'hooks> Environment<'a, 'b, 'hooks> {
         self.global_context.add_memory(contract_size)?;
 
         finally_drop_memory!(self.global_context, contract_size; {
-            let contract = self.global_context.database.get_contract(contract_identifier)?;
+
+            println!("\n\nGETTING CONTRACT {} FROM CACHE\n\n", contract_identifier);
+            let (contract, contract_size) = self.global_context.database.get_contract_from_cache(contract_identifier)?;
+            println!("\n\nGOT CONTRACT {} FROM CACHE (size {})\n\n", contract_identifier, contract_size);
 
             let func = contract.contract_context.lookup_function(tx_name)
                 .ok_or_else(|| { RuntimeCheckErrorKind::UndefinedFunction(tx_name.to_string()) })?;
