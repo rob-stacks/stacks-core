@@ -879,7 +879,7 @@ impl<'a> ClarityDatabase<'a> {
                 .into()))?;
         data.canonicalize_types(&self.get_clarity_epoch_version()?);
 
-       // self.lru_cache.insert(key, data.clone());
+        self.lru_cache.insert(key, data.clone());
 
         Ok(data)
     }
