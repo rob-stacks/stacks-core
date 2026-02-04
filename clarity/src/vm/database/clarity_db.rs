@@ -138,6 +138,7 @@ pub struct ClarityDatabase<'a> {
     headers_db: &'a dyn HeadersDB,
     burn_state_db: &'a dyn BurnStateDB,
     lru_cache: HashMap<String, Contract>,
+    lru_cache_hits: u128,
 }
 
 pub trait HeadersDB {
@@ -451,7 +452,8 @@ impl<'a> ClarityDatabase<'a> {
             store: RollbackWrapper::new(store),
             headers_db,
             burn_state_db,
-            lru_cache: HashMap::new()
+            lru_cache: HashMap::new(),
+            lru_cache_hits: 0,
         }
     }
 
@@ -464,7 +466,8 @@ impl<'a> ClarityDatabase<'a> {
             store,
             headers_db,
             burn_state_db,
-            lru_cache: HashMap::new()
+            lru_cache: HashMap::new(),
+            lru_cache_hits: 0,
         }
     }
 
@@ -870,6 +873,8 @@ impl<'a> ClarityDatabase<'a> {
 
         if self.lru_cache.contains_key(&cache_key) {
             let ast = self.lru_cache.get(&cache_key).unwrap();
+            self.lru_cache_hits = self.lru_cache_hits.wrapping_add(1);
+            println!("\n\nCACHE HITS {}\n\n", self.lru_cache_hits);
             return Ok(ast.clone());
         }
 
