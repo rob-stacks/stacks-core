@@ -853,6 +853,13 @@ impl<'a> ClarityDatabase<'a> {
             StoreType::Contract,
             ContractDataVarName::Contract.as_str(),
         );
+
+        let cache_key = (contract_identifier.clone(), key.clone());
+
+        if CONTRACT_AST_CACHE.with_borrow(|cache| cache.contains_key(&cache_key)) {
+            return true;
+        }
+
         self.store.has_metadata_entry(contract_identifier, &key)
     }
 
@@ -865,7 +872,7 @@ impl<'a> ClarityDatabase<'a> {
             ContractDataVarName::Contract.as_str(),
         );
 
-        let cache_key = format!("{}/{}", contract_identifier.to_string(), key);
+        let cache_key = (contract_identifier.clone(), key.clone());
 
         let data_opt = CONTRACT_AST_CACHE.with_borrow(|cache| {
             if let Some(data) = cache.get(&cache_key) {

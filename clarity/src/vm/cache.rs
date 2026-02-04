@@ -16,8 +16,10 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use clarity_types::types::QualifiedContractIdentifier;
+
 use crate::vm::contracts::Contract;
 
 thread_local! {
-    pub static CONTRACT_AST_CACHE: RefCell<HashMap<String, Contract>> = RefCell::new(HashMap::new());
+    pub static CONTRACT_AST_CACHE: RefCell<HashMap<(QualifiedContractIdentifier, String), Contract>> = RefCell::new(HashMap::new());
 }
