@@ -28,6 +28,7 @@ pub mod contexts;
 pub mod database;
 pub mod representations;
 
+pub mod cache;
 pub mod callables;
 pub mod functions;
 pub mod variables;

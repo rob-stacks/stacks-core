@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::collections::HashMap;
+
 use stacks_common::consts::{
     BITCOIN_REGTEST_FIRST_BLOCK_HASH, BITCOIN_REGTEST_FIRST_BLOCK_HEIGHT,
     BITCOIN_REGTEST_FIRST_BLOCK_TIMESTAMP, FIRST_BURNCHAIN_CONSENSUS_HASH, FIRST_STACKS_BLOCK_HASH,
@@ -28,7 +30,6 @@ use stacks_common::util::hash::{Hash160, Sha512Trunc256Sum, to_hex};
 
 use super::clarity_store::SpecialCaseHandler;
 use super::key_value_wrapper::ValueResult;
-use std::collections::HashMap;
 use crate::vm::analysis::{AnalysisDatabase, ContractAnalysis};
 use crate::vm::contracts::Contract;
 use crate::vm::costs::{CostOverflowingMath, ExecutionCost};
@@ -50,6 +51,7 @@ pub const TENURE_HEIGHT_KEY: &str = "_stx-data::tenure_height";
 pub const CLARITY_STORAGE_BLOCK_TIME_KEY: &str = "_stx-data::clarity_storage::block_time";
 
 pub type StacksEpoch = GenericStacksEpoch<ExecutionCost>;
+use crate::vm::cache::CONTRACT_AST_CACHE;
 
 #[repr(u8)]
 pub enum StoreType {
@@ -137,8 +139,6 @@ pub struct ClarityDatabase<'a> {
     pub store: RollbackWrapper<'a>,
     headers_db: &'a dyn HeadersDB,
     burn_state_db: &'a dyn BurnStateDB,
-    lru_cache: HashMap<String, Contract>,
-    lru_cache_hits: u128,
 }
 
 pub trait HeadersDB {
@@ -452,8 +452,6 @@ impl<'a> ClarityDatabase<'a> {
             store: RollbackWrapper::new(store),
             headers_db,
             burn_state_db,
-            lru_cache: HashMap::new(),
-            lru_cache_hits: 0,
         }
     }
 
@@ -466,8 +464,6 @@ impl<'a> ClarityDatabase<'a> {
             store,
             headers_db,
             burn_state_db,
-            lru_cache: HashMap::new(),
-            lru_cache_hits: 0,
         }
     }
 
@@ -871,20 +867,27 @@ impl<'a> ClarityDatabase<'a> {
 
         let cache_key = format!("{}/{}", contract_identifier.to_string(), key);
 
-        if self.lru_cache.contains_key(&cache_key) {
-            let ast = self.lru_cache.get(&cache_key).unwrap();
-            self.lru_cache_hits = self.lru_cache_hits.wrapping_add(1);
-            println!("\n\nCACHE HITS {} -- pid:{} tid:{:?}\n\n", self.lru_cache_hits, std::process::id(), std::thread::current().id());
-            return Ok(ast.clone());
+        let data_opt = CONTRACT_AST_CACHE.with_borrow(|cache| {
+            if let Some(data) = cache.get(&cache_key) {
+                Some(data.clone())
+            } else {
+                None
+            }
+        });
+
+        if let Some(data) = data_opt {
+            return Ok(data);
         }
 
-         let (mut data, size) : (Contract, usize) = self.fetch_metadata_with_size(contract_identifier, &key)?
+        let (mut data, size) : (Contract, usize) = self.fetch_metadata_with_size(contract_identifier, &key)?
             .ok_or_else(|| VmInternalError::Expect(
                 "Failed to read non-consensus contract metadata, even though contract exists in MARF."
                 .into()))?;
         data.canonicalize_types(&self.get_clarity_epoch_version()?);
 
-        self.lru_cache.insert(cache_key, data.clone());
+        CONTRACT_AST_CACHE.with_borrow_mut(|cache| {
+            cache.insert(cache_key, data.clone());
+        });
 
         Ok(data)
     }
