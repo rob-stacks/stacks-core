@@ -874,7 +874,7 @@ impl<'a> ClarityDatabase<'a> {
         if self.lru_cache.contains_key(&cache_key) {
             let ast = self.lru_cache.get(&cache_key).unwrap();
             self.lru_cache_hits = self.lru_cache_hits.wrapping_add(1);
-            println!("\n\nCACHE HITS {}\n\n", self.lru_cache_hits);
+            println!("\n\nCACHE HITS {} -- pid:{} tid:{:?}\n\n", self.lru_cache_hits, std::process::id(), std::thread::current().id());
             return Ok(ast.clone());
         }
 
