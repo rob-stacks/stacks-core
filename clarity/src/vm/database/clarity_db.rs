@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
-
 use stacks_common::consts::{
     BITCOIN_REGTEST_FIRST_BLOCK_HASH, BITCOIN_REGTEST_FIRST_BLOCK_HEIGHT,
     BITCOIN_REGTEST_FIRST_BLOCK_TIMESTAMP, FIRST_BURNCHAIN_CONSENSUS_HASH, FIRST_STACKS_BLOCK_HASH,
@@ -874,8 +872,8 @@ impl<'a> ClarityDatabase<'a> {
 
         let cache_key = (contract_identifier.clone(), key.clone());
 
-        let data_opt = CONTRACT_AST_CACHE.with_borrow(|cache| {
-            if let Some(data) = cache.get(&cache_key) {
+        let data_opt = CONTRACT_AST_CACHE.with_borrow_mut(|cache| {
+            if let Some((data, _size)) = cache.get(&cache_key) {
                 Some(data.clone())
             } else {
                 None
@@ -893,7 +891,7 @@ impl<'a> ClarityDatabase<'a> {
         data.canonicalize_types(&self.get_clarity_epoch_version()?);
 
         CONTRACT_AST_CACHE.with_borrow_mut(|cache| {
-            cache.insert(cache_key, data.clone());
+            cache.insert(&cache_key, data.clone(), size);
         });
 
         Ok(data)
