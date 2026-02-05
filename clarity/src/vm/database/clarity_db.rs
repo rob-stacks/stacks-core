@@ -842,6 +842,12 @@ impl<'a> ClarityDatabase<'a> {
             StoreType::Contract,
             ContractDataVarName::Contract.as_str(),
         );
+
+        let cache_key = (contract_identifier.clone(), key.clone());
+
+        // critical for avoiding stale caches in case of re-org
+        CONTRACT_AST_CACHE.with_borrow_mut(|cache| cache.remove(&cache_key));
+
         self.insert_metadata(contract_identifier, &key, &contract)?;
         Ok(())
     }
