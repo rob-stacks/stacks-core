@@ -595,4 +595,8 @@ impl RollbackWrapper<'_> {
     ) -> bool {
         matches!(self.get_metadata(contract, key), Ok(Some(_)))
     }
+
+    pub fn can_use_cache(&self) -> bool {
+        self.store.can_use_cache()
+    }
 }

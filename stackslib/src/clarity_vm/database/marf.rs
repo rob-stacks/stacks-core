@@ -780,6 +780,10 @@ impl ClarityBackingStore for ReadOnlyMarfStore<'_> {
     ) -> Result<Option<String>, VmExecutionError> {
         sqlite_get_metadata_manual(self, at_height, contract, key)
     }
+
+    fn can_use_cache(&self) -> bool {
+        true
+    }
 }
 
 impl PersistentWritableMarfStore<'_> {
@@ -1045,6 +1049,10 @@ impl ClarityBackingStore for PersistentWritableMarfStore<'_> {
     ) -> Result<Option<String>, VmExecutionError> {
         sqlite_get_metadata_manual(self, at_height, contract, key)
     }
+
+    fn can_use_cache(&self) -> bool {
+        true
+    }
 }
 
 impl WritableMarfStore for PersistentWritableMarfStore<'_> {}
@@ -1240,6 +1248,10 @@ impl<'a> ClarityBackingStore for Box<dyn WritableMarfStore + 'a> {
         key: &str,
     ) -> Result<Option<String>, VmExecutionError> {
         ClarityBackingStore::get_metadata_manual(self.deref_mut(), at_height, contract, key)
+    }
+
+    fn can_use_cache(&self) -> bool {
+        true
     }
 }
 

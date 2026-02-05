@@ -772,6 +772,10 @@ impl ClarityBackingStore for EphemeralMarfStore<'_> {
     ) -> Result<Option<String>, VmExecutionError> {
         sqlite_get_metadata_manual(self, at_height, contract, key)
     }
+
+    fn can_use_cache(&self) -> bool {
+        false
+    }
 }
 
 impl WritableMarfStore for EphemeralMarfStore<'_> {}

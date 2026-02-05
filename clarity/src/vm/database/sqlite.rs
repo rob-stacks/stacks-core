@@ -402,6 +402,10 @@ impl ClarityBackingStore for MemoryBackingStore {
     ) -> Result<Option<String>, VmExecutionError> {
         sqlite_get_metadata_manual(self, at_height, contract, key)
     }
+
+    fn can_use_cache(&self) -> bool {
+        false
+    }
 }
 
 #[test]

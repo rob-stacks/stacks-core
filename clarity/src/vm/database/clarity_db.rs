@@ -845,14 +845,16 @@ impl<'a> ClarityDatabase<'a> {
             ContractDataVarName::Contract.as_str(),
         );
 
-        let cache_key = (contract_identifier.clone(), key.clone());
+        if self.store.can_use_cache() {
+            let cache_key = (contract_identifier.clone(), key.clone());
 
-        // critical for avoiding stale caches in case of re-org
-        // in case of lock issues it is better to crash :(
-        CONTRACT_AST_CACHE
-            .lock()
-            .expect("Unable to acquire AST cache lock")
-            .remove(&cache_key);
+            // critical for avoiding stale caches in case of re-org
+            // in case of lock issues it is better to crash :(
+            CONTRACT_AST_CACHE
+                .lock()
+                .expect("Unable to acquire AST cache lock")
+                .remove(&cache_key);
+        }
 
         self.insert_metadata(contract_identifier, &key, &contract)?;
         Ok(())
@@ -864,11 +866,13 @@ impl<'a> ClarityDatabase<'a> {
             ContractDataVarName::Contract.as_str(),
         );
 
-        let cache_key = (contract_identifier.clone(), key.clone());
+        if self.store.can_use_cache() {
+            let cache_key = (contract_identifier.clone(), key.clone());
 
-        if let Ok(cache) = CONTRACT_AST_CACHE.lock() {
-            if cache.contains_key(&cache_key) {
-                return true;
+            if let Ok(cache) = CONTRACT_AST_CACHE.lock() {
+                if cache.contains_key(&cache_key) {
+                    return true;
+                }
             }
         }
 
@@ -886,19 +890,21 @@ impl<'a> ClarityDatabase<'a> {
 
         let cache_key = (contract_identifier.clone(), key.clone());
 
-        let data_opt = match CONTRACT_AST_CACHE.lock() {
-            Ok(mut cache) => {
-                if let Some((data, _size)) = cache.get(&cache_key) {
-                    Some((**data).clone())
-                } else {
-                    None
+        if self.store.can_use_cache() {
+            let data_opt = match CONTRACT_AST_CACHE.lock() {
+                Ok(mut cache) => {
+                    if let Some((data, _size)) = cache.get(&cache_key) {
+                        Some((**data).clone())
+                    } else {
+                        None
+                    }
                 }
-            }
-            Err(_) => None,
-        };
+                Err(_) => None,
+            };
 
-        if let Some(data) = data_opt {
-            return Ok(data);
+            if let Some(data) = data_opt {
+                return Ok(data);
+            }
         }
 
         let (mut data, size) : (Contract, usize) = self.fetch_metadata_with_size(contract_identifier, &key)?
@@ -907,9 +913,11 @@ impl<'a> ClarityDatabase<'a> {
                 .into()))?;
         data.canonicalize_types(&self.get_clarity_epoch_version()?);
 
-        if let Ok(mut cache) = CONTRACT_AST_CACHE.lock() {
-            cache.insert(&cache_key, Arc::new(data.clone()), size);
-        };
+        if self.store.can_use_cache() {
+            if let Ok(mut cache) = CONTRACT_AST_CACHE.lock() {
+                cache.insert(&cache_key, Arc::new(data.clone()), size);
+            };
+        }
 
         Ok(data)
     }

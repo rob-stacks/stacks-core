@@ -142,6 +142,8 @@ pub trait ClarityBackingStore {
         }
         Ok(())
     }
+
+    fn can_use_cache(&self) -> bool;
 }
 
 // TODO: Figure out where this belongs
@@ -283,5 +285,9 @@ impl ClarityBackingStore for NullBackingStore {
         _key: &str,
     ) -> Result<Option<String>, VmExecutionError> {
         panic!("NullBackingStore cannot get_metadata_manual")
+    }
+
+    fn can_use_cache(&self) -> bool {
+        false
     }
 }
