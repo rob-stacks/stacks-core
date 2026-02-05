@@ -13,9 +13,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::sync::{Arc, LazyLock, Mutex};
 
 use clarity_types::types::QualifiedContractIdentifier;
 
@@ -24,9 +24,18 @@ use crate::vm::contracts::Contract;
 const CONTRACT_AST_CACHE_SIZE: usize = 64 * 1024 * 1024;
 const CONTRACT_AST_CACHE_ITEM_MAX_SIZE: usize = 1 * 1024 * 1024;
 
-thread_local! {
+/*thread_local! {
     pub static CONTRACT_AST_CACHE: RefCell<ArenaLRUSizedCache<(QualifiedContractIdentifier, String), Contract>> = RefCell::new(ArenaLRUSizedCache::new(CONTRACT_AST_CACHE_SIZE, CONTRACT_AST_CACHE_ITEM_MAX_SIZE));
-}
+}*/
+
+pub static CONTRACT_AST_CACHE: LazyLock<
+    Mutex<ArenaLRUSizedCache<(QualifiedContractIdentifier, String), Arc<Contract>>>,
+> = LazyLock::new(|| {
+    Mutex::new(ArenaLRUSizedCache::new(
+        CONTRACT_AST_CACHE_SIZE,
+        CONTRACT_AST_CACHE_ITEM_MAX_SIZE,
+    ))
+});
 
 struct ArenaLRUSizedCacheNode<K, V> {
     key: K,

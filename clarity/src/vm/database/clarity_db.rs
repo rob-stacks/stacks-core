@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::sync::Arc;
+
 use stacks_common::consts::{
     BITCOIN_REGTEST_FIRST_BLOCK_HASH, BITCOIN_REGTEST_FIRST_BLOCK_HEIGHT,
     BITCOIN_REGTEST_FIRST_BLOCK_TIMESTAMP, FIRST_BURNCHAIN_CONSENSUS_HASH, FIRST_STACKS_BLOCK_HASH,
@@ -846,7 +848,11 @@ impl<'a> ClarityDatabase<'a> {
         let cache_key = (contract_identifier.clone(), key.clone());
 
         // critical for avoiding stale caches in case of re-org
-        CONTRACT_AST_CACHE.with_borrow_mut(|cache| cache.remove(&cache_key));
+        // in case of lock issues it is better to crash :(
+        CONTRACT_AST_CACHE
+            .lock()
+            .expect("Unable to acquire AST cache lock")
+            .remove(&cache_key);
 
         self.insert_metadata(contract_identifier, &key, &contract)?;
         Ok(())
@@ -860,8 +866,10 @@ impl<'a> ClarityDatabase<'a> {
 
         let cache_key = (contract_identifier.clone(), key.clone());
 
-        if CONTRACT_AST_CACHE.with_borrow(|cache| cache.contains_key(&cache_key)) {
-            return true;
+        if let Ok(cache) = CONTRACT_AST_CACHE.lock() {
+            if cache.contains_key(&cache_key) {
+                return true;
+            }
         }
 
         self.store.has_metadata_entry(contract_identifier, &key)
@@ -878,13 +886,16 @@ impl<'a> ClarityDatabase<'a> {
 
         let cache_key = (contract_identifier.clone(), key.clone());
 
-        let data_opt = CONTRACT_AST_CACHE.with_borrow_mut(|cache| {
-            if let Some((data, _size)) = cache.get(&cache_key) {
-                Some(data.clone())
-            } else {
-                None
+        let data_opt = match CONTRACT_AST_CACHE.lock() {
+            Ok(mut cache) => {
+                if let Some((data, _size)) = cache.get(&cache_key) {
+                    Some((**data).clone())
+                } else {
+                    None
+                }
             }
-        });
+            Err(_) => None,
+        };
 
         if let Some(data) = data_opt {
             return Ok(data);
@@ -896,9 +907,9 @@ impl<'a> ClarityDatabase<'a> {
                 .into()))?;
         data.canonicalize_types(&self.get_clarity_epoch_version()?);
 
-        CONTRACT_AST_CACHE.with_borrow_mut(|cache| {
-            cache.insert(&cache_key, data.clone(), size);
-        });
+        if let Ok(mut cache) = CONTRACT_AST_CACHE.lock() {
+            cache.insert(&cache_key, Arc::new(data.clone()), size);
+        };
 
         Ok(data)
     }
