@@ -132,6 +132,14 @@ impl<K: Clone + Eq + Hash, V> ArenaLRUSizedCache<K, V> {
         self.map.len()
     }
 
+    pub fn get_current_size(&self) -> usize {
+        self.current_size
+    }
+
+    pub fn get_max_size(&self) -> usize {
+        self.max_size
+    }
+
     pub fn insert(&mut self, key: &K, value: V, size: usize) {
         // key already exists, set it as mru (we do not want to allow overwrites for performance reasons)
         if let Some(&index) = self.map.get(&key) {
@@ -189,8 +197,10 @@ mod test {
     fn test_initial_state() {
         let cache = ArenaLRUSizedCache::<String, String>::new(100, 10);
         assert_eq!(cache.max_size, 100);
+        assert_eq!(cache.get_max_size(), 100);
         assert_eq!(cache.max_item_size, 10);
         assert_eq!(cache.current_size, 0);
+        assert_eq!(cache.get_current_size(), 0);
         assert_eq!(cache.arena.len(), 0);
         assert_eq!(cache.map.len(), 0);
         assert_eq!(cache.sizes.len(), 0);
