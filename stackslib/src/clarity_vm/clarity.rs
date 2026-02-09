@@ -1984,6 +1984,10 @@ impl<'a, 'b> ClarityBlockConnection<'a, 'b> {
     pub fn set_epoch(&mut self, epoch_id: StacksEpochId) {
         self.epoch = epoch_id;
     }
+
+    pub fn use_cache(&mut self, enabled: bool) {
+        self.datastore.use_cache(enabled)
+    }
 }
 
 impl ClarityConnection for ClarityTransactionConnection<'_, '_> {

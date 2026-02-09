@@ -144,6 +144,8 @@ pub trait ClarityBackingStore {
     }
 
     fn can_use_cache(&self) -> bool;
+
+    fn use_cache(&mut self, _enabled: bool) {}
 }
 
 // TODO: Figure out where this belongs

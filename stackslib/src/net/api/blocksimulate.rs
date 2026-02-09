@@ -51,6 +51,7 @@ pub struct RPCNakamotoBlockSimulateRequestHandler {
     pub block_id: Option<StacksBlockId>,
     pub auth: Option<String>,
     pub profiler: bool,
+    pub use_cache: bool,
     pub transactions: Vec<StacksTransaction>,
     pub mint: Vec<RPCNakamotoBlockSimulateMint>,
 }
@@ -61,6 +62,7 @@ impl RPCNakamotoBlockSimulateRequestHandler {
             block_id: None,
             auth,
             profiler: false,
+            use_cache: false,
             transactions: vec![],
             mint: vec![],
         }
@@ -104,6 +106,7 @@ impl RPCNakamotoBlockSimulateRequestHandler {
             sortdb,
             chainstate,
             self.profiler,
+            self.use_cache,
             |_| self.transactions.clone(),
             |tenure_tx| {
                 if !self.mint.is_empty() {

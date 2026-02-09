@@ -148,6 +148,7 @@ pub struct RPCNakamotoBlockReplayRequestHandler {
     pub block_id: Option<StacksBlockId>,
     pub auth: Option<String>,
     pub profiler: bool,
+    pub use_cache: bool,
 }
 
 pub fn remine_nakamoto_block<F0, F1>(
@@ -155,6 +156,7 @@ pub fn remine_nakamoto_block<F0, F1>(
     sortdb: &SortitionDB,
     chainstate: &mut StacksChainState,
     enable_profiler: bool,
+    use_cache: bool,
     get_transactions: F0,
     before_mining: F1,
 ) -> Result<RPCReplayedBlock, ChainError>
@@ -251,6 +253,8 @@ where
         Err(e) => return Err(e),
     };
 
+    tenure_tx.use_cache(use_cache);
+
     before_mining(&mut tenure_tx)?;
 
     let mut block_fees: u128 = 0;
@@ -332,6 +336,7 @@ impl RPCNakamotoBlockReplayRequestHandler {
             block_id: None,
             auth,
             profiler: false,
+            use_cache: false,
         }
     }
 
@@ -351,6 +356,7 @@ impl RPCNakamotoBlockReplayRequestHandler {
             sortdb,
             chainstate,
             self.profiler,
+            self.use_cache,
             |block| {
                 tx_merkle_root = Some(block.header.tx_merkle_root.clone());
                 block.txs.clone()
@@ -564,7 +570,10 @@ impl HttpRequest for RPCNakamotoBlockReplayRequestHandler {
                     if value == "1" {
                         self.profiler = true;
                     }
-                    break;
+                } else if key == "use_cache" {
+                    if value == "1" {
+                        self.use_cache = true;
+                    }
                 }
             }
         }
