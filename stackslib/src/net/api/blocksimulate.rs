@@ -106,9 +106,11 @@ impl RPCNakamotoBlockSimulateRequestHandler {
             sortdb,
             chainstate,
             self.profiler,
-            self.use_cache,
             |_| self.transactions.clone(),
             |tenure_tx| {
+                // only read from cache is allowed
+                tenure_tx.set_read_from_cache(self.use_cache);
+
                 if !self.mint.is_empty() {
                     tenure_tx.connection().as_transaction(|tx| {
                         tx.with_clarity_db(|ref mut db| {
@@ -180,7 +182,10 @@ impl HttpRequest for RPCNakamotoBlockSimulateRequestHandler {
                 if key == "profiler" {
                     if value == "1" {
                         self.profiler = true;
-                        break;
+                    }
+                } else if key == "use_cache" {
+                    if value == "1" {
+                        self.use_cache = true;
                     }
                 }
             }

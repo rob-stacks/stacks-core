@@ -156,7 +156,6 @@ pub fn remine_nakamoto_block<F0, F1>(
     sortdb: &SortitionDB,
     chainstate: &mut StacksChainState,
     enable_profiler: bool,
-    use_cache: bool,
     get_transactions: F0,
     before_mining: F1,
 ) -> Result<RPCReplayedBlock, ChainError>
@@ -252,9 +251,6 @@ where
         Ok(tenure_tx) => tenure_tx,
         Err(e) => return Err(e),
     };
-
-    tenure_tx.set_read_from_cache(use_cache);
-    tenure_tx.set_write_to_cache(use_cache);
 
     before_mining(&mut tenure_tx)?;
 
@@ -357,12 +353,16 @@ impl RPCNakamotoBlockReplayRequestHandler {
             sortdb,
             chainstate,
             self.profiler,
-            self.use_cache,
             |block| {
                 tx_merkle_root = Some(block.header.tx_merkle_root.clone());
                 block.txs.clone()
             },
-            |_| Ok(()),
+            |tenure_tx| {
+                tenure_tx.set_read_from_cache(self.use_cache);
+                tenure_tx.set_write_to_cache(self.use_cache);
+
+                Ok(())
+            },
         )?;
 
         if let Some(tx_merkle_root) = tx_merkle_root {
