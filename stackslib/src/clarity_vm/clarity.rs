@@ -1985,8 +1985,8 @@ impl<'a, 'b> ClarityBlockConnection<'a, 'b> {
         self.epoch = epoch_id;
     }
 
-    pub fn use_cache(&mut self, enabled: bool) {
-        self.datastore.use_cache(enabled)
+    pub fn set_read_from_cache(&mut self, enabled: bool) {
+        self.datastore.set_read_from_cache(enabled)
     }
 }
 

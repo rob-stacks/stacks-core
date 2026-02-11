@@ -776,11 +776,15 @@ impl ClarityBackingStore for EphemeralMarfStore<'_> {
         sqlite_get_metadata_manual(self, at_height, contract, key)
     }
 
-    fn can_use_cache(&self) -> bool {
+    fn can_read_from_cache(&self) -> bool {
         self.use_cache
     }
 
-    fn use_cache(&mut self, enabled: bool) {
+    fn can_write_to_cache(&self) -> bool {
+        false
+    }
+
+    fn set_read_from_cache(&mut self, enabled: bool) {
         self.use_cache = enabled
     }
 }

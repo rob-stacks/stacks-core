@@ -1309,7 +1309,11 @@ impl ClarityBackingStore for MemoryBackingStore {
         sqlite_get_metadata_manual(self, at_height, contract, key)
     }
 
-    fn can_use_cache(&self) -> bool {
+    fn can_read_from_cache(&self) -> bool {
+        false
+    }
+
+    fn can_write_to_cache(&self) -> bool {
         false
     }
 }

@@ -253,7 +253,7 @@ where
         Err(e) => return Err(e),
     };
 
-    tenure_tx.use_cache(use_cache);
+    tenure_tx.set_read_from_cache(use_cache);
 
     before_mining(&mut tenure_tx)?;
 

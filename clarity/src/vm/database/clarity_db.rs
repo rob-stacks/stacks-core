@@ -845,7 +845,9 @@ impl<'a> ClarityDatabase<'a> {
             ContractDataVarName::Contract.as_str(),
         );
 
-        if self.store.can_use_cache() {
+        // here we are checking for can_read_from_cache as it is important
+        // to not pollute the cache during a reorg
+        if self.store.can_read_from_cache() {
             let cache_key = (contract_identifier.clone(), key.clone());
 
             // critical for avoiding stale caches in case of re-org
@@ -866,7 +868,7 @@ impl<'a> ClarityDatabase<'a> {
             ContractDataVarName::Contract.as_str(),
         );
 
-        if self.store.can_use_cache() {
+        if self.store.can_read_from_cache() {
             let cache_key = (contract_identifier.clone(), key.clone());
 
             if let Ok(cache) = CONTRACT_AST_CACHE.lock() {
@@ -890,7 +892,7 @@ impl<'a> ClarityDatabase<'a> {
 
         let cache_key = (contract_identifier.clone(), key.clone());
 
-        if self.store.can_use_cache() {
+        if self.store.can_read_from_cache() {
             let data_opt = match CONTRACT_AST_CACHE.lock() {
                 Ok(mut cache) => {
                     if let Some((data, _size)) = cache.get(&cache_key) {
@@ -913,7 +915,7 @@ impl<'a> ClarityDatabase<'a> {
                 .into()))?;
         data.canonicalize_types(&self.get_clarity_epoch_version()?);
 
-        if self.store.can_use_cache() {
+        if self.store.can_write_to_cache() {
             if let Ok(mut cache) = CONTRACT_AST_CACHE.lock() {
                 cache.insert(&cache_key, Arc::new(data.clone()), size);
             };

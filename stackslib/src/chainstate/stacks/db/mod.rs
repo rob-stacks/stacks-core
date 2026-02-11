@@ -608,8 +608,8 @@ impl<'a, 'b> ClarityTx<'a, 'b> {
             .expect("FATAL: `ust-liquid-supply` overflowed");
     }
 
-    pub fn use_cache(&mut self, enabled: bool) {
-        self.block.use_cache(enabled)
+    pub fn set_read_from_cache(&mut self, enabled: bool) {
+        self.block.set_read_from_cache(enabled)
     }
 }
 
