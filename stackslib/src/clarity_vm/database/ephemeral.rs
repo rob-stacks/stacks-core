@@ -56,8 +56,9 @@ pub struct EphemeralMarfStore<'a> {
     ephemeral_marf: MarfTransaction<'a, StacksBlockId>,
     /// Handle to on-disk MARF
     read_only_marf: ReadOnlyMarfStore<'a>,
-    /// Enable/disable contract cache
-    use_cache: bool,
+    /// Enable/disable contract cache (for read and write)
+    read_from_cache_enabled: bool,
+    write_to_cache_enabled: bool,
 }
 
 impl ClarityMarfStore for EphemeralMarfStore<'_> {}
@@ -238,7 +239,8 @@ impl<'a> EphemeralMarfStore<'a> {
             base_tip_height,
             ephemeral_marf: ephemeral_marf_tx,
             read_only_marf,
-            use_cache: false,
+            read_from_cache_enabled: false,
+            write_to_cache_enabled: false,
         };
 
         // setup views so that the ephemeral MARF's data and metadata tables show all MARF
@@ -777,15 +779,19 @@ impl ClarityBackingStore for EphemeralMarfStore<'_> {
     }
 
     fn can_read_from_cache(&self) -> bool {
-        self.use_cache
+        self.read_from_cache_enabled
     }
 
     fn can_write_to_cache(&self) -> bool {
-        false
+        self.write_to_cache_enabled
     }
 
     fn set_read_from_cache(&mut self, enabled: bool) {
-        self.use_cache = enabled
+        self.read_from_cache_enabled = enabled
+    }
+
+    fn set_write_to_cache(&mut self, enabled: bool) {
+        self.write_to_cache_enabled = enabled
     }
 }
 
