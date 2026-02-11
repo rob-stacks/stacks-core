@@ -788,6 +788,9 @@ impl ClarityBackingStore for ReadOnlyMarfStore<'_> {
     fn can_write_to_cache(&self) -> bool {
         true
     }
+
+    fn set_read_from_cache(&mut self, _enabled: bool) {}
+    fn set_write_to_cache(&mut self, _enabled: bool) {}
 }
 
 impl PersistentWritableMarfStore<'_> {
@@ -1061,6 +1064,9 @@ impl ClarityBackingStore for PersistentWritableMarfStore<'_> {
     fn can_write_to_cache(&self) -> bool {
         true
     }
+
+    fn set_read_from_cache(&mut self, _enabled: bool) {}
+    fn set_write_to_cache(&mut self, _enabled: bool) {}
 }
 
 impl WritableMarfStore for PersistentWritableMarfStore<'_> {}
@@ -1259,11 +1265,18 @@ impl<'a> ClarityBackingStore for Box<dyn WritableMarfStore + 'a> {
     }
 
     fn can_read_from_cache(&self) -> bool {
-        true
+        ClarityBackingStore::can_read_from_cache(&**self)
     }
 
     fn can_write_to_cache(&self) -> bool {
-        true
+        ClarityBackingStore::can_write_to_cache(&**self)
+    }
+
+    fn set_read_from_cache(&mut self, enabled: bool) {
+        ClarityBackingStore::set_read_from_cache(self.deref_mut(), enabled)
+    }
+    fn set_write_to_cache(&mut self, enabled: bool) {
+        ClarityBackingStore::set_write_to_cache(self.deref_mut(), enabled)
     }
 }
 

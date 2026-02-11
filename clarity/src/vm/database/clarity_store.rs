@@ -146,8 +146,8 @@ pub trait ClarityBackingStore {
     fn can_read_from_cache(&self) -> bool;
     fn can_write_to_cache(&self) -> bool;
 
-    fn set_read_from_cache(&mut self, _enabled: bool) {}
-    fn set_write_to_cache(&mut self, _enabled: bool) {}
+    fn set_read_from_cache(&mut self, _enabled: bool);
+    fn set_write_to_cache(&mut self, _enabled: bool);
 }
 
 // TODO: Figure out where this belongs
@@ -298,4 +298,7 @@ impl ClarityBackingStore for NullBackingStore {
     fn can_write_to_cache(&self) -> bool {
         false
     }
+
+    fn set_read_from_cache(&mut self, _enabled: bool) {}
+    fn set_write_to_cache(&mut self, _enabled: bool) {}
 }

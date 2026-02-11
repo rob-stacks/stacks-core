@@ -410,6 +410,9 @@ impl ClarityBackingStore for MemoryBackingStore {
     fn can_write_to_cache(&self) -> bool {
         false
     }
+
+    fn set_read_from_cache(&mut self, _enabled: bool) {}
+    fn set_write_to_cache(&mut self, _enabled: bool) {}
 }
 
 #[test]
