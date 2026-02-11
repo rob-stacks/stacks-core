@@ -1988,6 +1988,10 @@ impl<'a, 'b> ClarityBlockConnection<'a, 'b> {
     pub fn set_read_from_cache(&mut self, enabled: bool) {
         self.datastore.set_read_from_cache(enabled)
     }
+
+    pub fn set_write_to_cache(&mut self, enabled: bool) {
+        self.datastore.set_write_to_cache(enabled)
+    }
 }
 
 impl ClarityConnection for ClarityTransactionConnection<'_, '_> {

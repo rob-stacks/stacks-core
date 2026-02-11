@@ -611,6 +611,10 @@ impl<'a, 'b> ClarityTx<'a, 'b> {
     pub fn set_read_from_cache(&mut self, enabled: bool) {
         self.block.set_read_from_cache(enabled)
     }
+
+    pub fn set_write_to_cache(&mut self, enabled: bool) {
+        self.block.set_write_to_cache(enabled)
+    }
 }
 
 pub struct ChainstateTx<'a> {

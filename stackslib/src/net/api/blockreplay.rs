@@ -254,6 +254,7 @@ where
     };
 
     tenure_tx.set_read_from_cache(use_cache);
+    tenure_tx.set_write_to_cache(use_cache);
 
     before_mining(&mut tenure_tx)?;
 
