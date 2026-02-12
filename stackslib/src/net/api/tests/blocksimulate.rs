@@ -214,7 +214,7 @@ fn test_try_make_response() {
     // got the Nakamoto tip
     let response = responses.remove(0);
 
-    println!(
+    debug!(
         "Response:\n{}\n",
         std::str::from_utf8(&response.try_serialize().unwrap()).unwrap()
     );
@@ -470,6 +470,7 @@ fn test_try_make_response_with_unsuccessful_transaction() {
     );
     // add the authorization header
     request.add_header("authorization".into(), "password".into());
+
     requests.push(request);
 
     let mut responses = rpc_test.run(requests);

@@ -915,6 +915,7 @@ impl<'a> ClarityDatabase<'a> {
                 .into()))?;
         data.canonicalize_types(&self.get_clarity_epoch_version()?);
 
+        #[cfg(not(any(test, feature = "testing")))]
         if self.store.can_write_to_cache() {
             if let Ok(mut cache) = CONTRACT_AST_CACHE.lock() {
                 cache.insert(&cache_key, Arc::new(data.clone()), size);
