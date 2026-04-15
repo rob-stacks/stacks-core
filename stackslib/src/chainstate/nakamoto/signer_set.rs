@@ -1029,6 +1029,8 @@ impl NakamotoSigners {
         let (reward_set, new_ratios) =
             Self::pox_5_make_reward_set(entries, pox_constants, &mut pool_provider, prior_ratios)?;
 
+        println!("\n\nXYZ {:?}\n\n", reward_set);
+
         let new_ratios_clar: Result<Vec<_>, _> = new_ratios
             .into_iter()
             .map(|big_int| Value::buff_from(big_int.to_bytes_le().to_vec()))

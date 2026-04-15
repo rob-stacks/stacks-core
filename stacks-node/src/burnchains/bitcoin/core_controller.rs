@@ -83,6 +83,7 @@ impl BitcoinCoreController {
         result.add_arg("-txindex=1");
         result.add_arg("-server=1");
         result.add_arg("-listenonion=0");
+        result.add_arg("-fallbackfee=0.1");
         result.add_arg("-rpcbind=127.0.0.1");
         result.add_arg(format!("-datadir={}", result.data_path));
 

@@ -498,7 +498,7 @@ impl BitcoinRegtestController {
     ///
     /// In practice, this means the node is expected to act as a miner,
     /// yet no [`BitcoinRpcClient`] was created or properly configured.
-    fn get_rpc_client(&self) -> &BitcoinRpcClient {
+    pub fn get_rpc_client(&self) -> &BitcoinRpcClient {
         self.rpc_client
             .as_ref()
             .expect("BUG: BitcoinRpcClient is required, but it has not been configured properly!")
@@ -2146,7 +2146,7 @@ impl BitcoinRegtestController {
     }
 
     /// Returns the configured wallet name from [`Config`].
-    fn get_wallet_name(&self) -> &String {
+    pub fn get_wallet_name(&self) -> &String {
         &self.config.burnchain.wallet_name
     }
 
@@ -2156,9 +2156,10 @@ impl BitcoinRegtestController {
     /// This computes both **legacy (P2PKH)** and, if the miner is configured
     /// with `segwit` enabled, also **SegWit (P2WPKH)** addresses, then imports
     /// the related descriptors into the wallet.
-    pub fn import_public_key(
+    pub fn import_public_key_to_wallet(
         &self,
         public_key: &Secp256k1PublicKey,
+        wallet_name: &str,
     ) -> BitcoinRegtestControllerResult<()> {
         let pkh = Hash160::from_data(&public_key.to_bytes())
             .to_bytes()
@@ -2196,9 +2197,22 @@ impl BitcoinRegtestController {
             };
 
             self.get_rpc_client()
-                .import_descriptors(self.get_wallet_name(), &[&descr_req])?;
+                .import_descriptors(wallet_name, &[&descr_req])?;
         }
         Ok(())
+    }
+
+    /// Imports a public key into configured wallet by registering its
+    /// corresponding addresses as descriptors.
+    ///
+    /// This computes both **legacy (P2PKH)** and, if the miner is configured
+    /// with `segwit` enabled, also **SegWit (P2WPKH)** addresses, then imports
+    /// the related descriptors into the wallet.
+    pub fn import_public_key(
+        &self,
+        public_key: &Secp256k1PublicKey,
+    ) -> BitcoinRegtestControllerResult<()> {
+        self.import_public_key_to_wallet(public_key, self.get_wallet_name())
     }
 
     /// Returns a copy of the given public key adjusted to the current epoch rules.
