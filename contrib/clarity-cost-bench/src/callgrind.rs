@@ -30,11 +30,12 @@ pub fn measure(
     let safe_name = format!("{}_{}_{}", sanitise(function), sanitise(variant), size);
     let out_file = PathBuf::from(format!("/tmp/cg_{safe_name}.out"));
 
+    let out_file_arg = format!("--callgrind-out-file={}", out_file.display());
+
     let status = Command::new("valgrind")
         .args([
             "--tool=callgrind",
-            "--callgrind-out-file",
-            out_file.to_str().unwrap(),
+            &out_file_arg,
             "--simulate-cache=yes", // adds Dr + Dw alongside Ir
             "--quiet",
             "--",
