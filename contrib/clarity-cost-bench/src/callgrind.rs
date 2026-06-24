@@ -22,12 +22,12 @@ pub fn measure(
     size: u64,
     iters: u32,
 ) -> Result<Metrics, String> {
-    let safe_name = format!(
-        "{}_{}_{}",
-        function.replace(['/', '?', '!', '-'], "_"),
-        variant.replace(['/', '?', '!', '-', ' ', '(', ')'], "_"),
-        size
-    );
+    let sanitise = |s: &str| -> String {
+        s.chars()
+            .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
+            .collect()
+    };
+    let safe_name = format!("{}_{}_{}", sanitise(function), sanitise(variant), size);
     let out_file = PathBuf::from(format!("/tmp/cg_{safe_name}.out"));
 
     let status = Command::new("valgrind")
@@ -35,14 +35,19 @@ pub fn measure(
             "--tool=callgrind",
             "--callgrind-out-file",
             out_file.to_str().unwrap(),
-            "--simulate-cache=yes",  // adds Dr + Dw alongside Ir
+            "--simulate-cache=yes", // adds Dr + Dw alongside Ir
             "--quiet",
             "--",
-            exe, "run",
-            "--function", function,
-            "--variant", variant,
-            "--size", &size.to_string(),
-            "--iters", &iters.to_string(),
+            exe,
+            "run",
+            "--function",
+            function,
+            "--variant",
+            variant,
+            "--size",
+            &size.to_string(),
+            "--iters",
+            &iters.to_string(),
         ])
         .status()
         .map_err(|e| format!("failed to spawn valgrind: {e}"))?;
@@ -103,8 +108,8 @@ pub fn parse_metrics(content: &str) -> Result<Metrics, String> {
     };
 
     Ok(Metrics {
-        instrs:     get("Ir"),
-        mem_reads:  get("Dr"),
+        instrs: get("Ir"),
+        mem_reads: get("Dr"),
         mem_writes: get("Dw"),
     })
 }
@@ -123,9 +128,9 @@ fn=(below main)
 totals: 987654321 111111111 22222222 100 200 300 50 100 150
 ";
         let m = parse_metrics(sample).unwrap();
-        assert_eq!(m.instrs,    987_654_321);
-        assert_eq!(m.mem_reads,  111_111_111);
-        assert_eq!(m.mem_writes,  22_222_222);
+        assert_eq!(m.instrs, 987_654_321);
+        assert_eq!(m.mem_reads, 111_111_111);
+        assert_eq!(m.mem_writes, 22_222_222);
     }
 
     #[test]
@@ -142,8 +147,8 @@ totals: 987654321 111111111 22222222 100 200 300 50 100 150
     fn parse_summary_fallback() {
         let sample = "events: Ir Dr Dw\nsummary: 111 222 333\n";
         let m = parse_metrics(sample).unwrap();
-        assert_eq!(m.instrs,    111);
+        assert_eq!(m.instrs, 111);
         assert_eq!(m.mem_reads, 222);
-        assert_eq!(m.mem_writes,333);
+        assert_eq!(m.mem_writes, 333);
     }
 }

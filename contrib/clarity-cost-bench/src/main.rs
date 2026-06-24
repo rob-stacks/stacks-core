@@ -11,7 +11,10 @@ use std::collections::HashMap;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "clarity-cost-bench", about = "Measure Clarity 6 function costs via Callgrind")]
+#[command(
+    name = "clarity-cost-bench",
+    about = "Measure Clarity 6 function costs via Callgrind"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -58,8 +61,17 @@ fn main() {
     let cli = Cli::parse();
     match cli.command {
         Commands::List { ready_only } => cmd_list(ready_only),
-        Commands::Run { function, variant, size, iters } => cmd_run(&function, &variant, size, iters),
-        Commands::Bench { output, functions, iters } => cmd_bench(&output, functions.as_deref(), iters),
+        Commands::Run {
+            function,
+            variant,
+            size,
+            iters,
+        } => cmd_run(&function, &variant, size, iters),
+        Commands::Bench {
+            output,
+            functions,
+            iters,
+        } => cmd_bench(&output, functions.as_deref(), iters),
         Commands::Analyze { input } => cmd_analyze(&input),
     }
 }
@@ -69,14 +81,23 @@ fn main() {
 // ---------------------------------------------------------------------------
 
 fn cmd_list(ready_only: bool) {
-    println!("{:<30}  {:<7}  {:<12}  {}", "FUNCTION", "SINCE", "STATUS", "DETAIL");
+    println!(
+        "{:<30}  {:<7}  {:<12}  {}",
+        "FUNCTION", "SINCE", "STATUS", "DETAIL"
+    );
     println!("{}", "-".repeat(80));
     for entry in coverage::ALL_FUNCTIONS {
         match &entry.status {
             coverage::Status::Benchmarked => {
                 let suite = suites::all_suites().find(|s| s.function == entry.name);
                 let variants: String = suite
-                    .map(|s| s.cases.iter().map(|c| c.variant).collect::<Vec<_>>().join(", "))
+                    .map(|s| {
+                        s.cases
+                            .iter()
+                            .map(|c| c.variant)
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    })
                     .unwrap_or_else(|| "MISSING SUITE".to_string());
                 println!(
                     "{:<30}  {:<7}  {:<12}  variants: {}",
@@ -121,11 +142,14 @@ fn cmd_bench(output: &str, filter: Option<&str>, iters: u32) {
         .to_string_lossy()
         .into_owned();
 
-    let filter_set: Option<Vec<&str>> =
-        filter.map(|s| s.split(',').map(str::trim).collect());
+    let filter_set: Option<Vec<&str>> = filter.map(|s| s.split(',').map(str::trim).collect());
 
     let selected: Vec<&suites::Suite> = suites::all_suites()
-        .filter(|s| filter_set.as_ref().map_or(true, |ids| ids.contains(&s.function)))
+        .filter(|s| {
+            filter_set
+                .as_ref()
+                .map_or(true, |ids| ids.contains(&s.function))
+        })
         .collect();
 
     if selected.is_empty() {
@@ -139,31 +163,48 @@ fn cmd_bench(output: &str, filter: Option<&str>, iters: u32) {
         .sum();
     let mut done = 0usize;
 
-    let mut wtr = csv::Writer::from_path(output)
-        .unwrap_or_else(|e| { eprintln!("cannot open {output}: {e}"); std::process::exit(1) });
-    wtr.write_record(["function", "variant", "n_unit", "size",
-                       "instrs_per_call", "mem_reads_per_call", "mem_writes_per_call", "iters"])
-        .unwrap();
+    let mut wtr = csv::Writer::from_path(output).unwrap_or_else(|e| {
+        eprintln!("cannot open {output}: {e}");
+        std::process::exit(1)
+    });
+    wtr.write_record([
+        "function",
+        "variant",
+        "n_unit",
+        "size",
+        "instrs_per_call",
+        "mem_reads_per_call",
+        "mem_writes_per_call",
+        "iters",
+    ])
+    .unwrap();
 
     for suite in &selected {
         for case in suite.cases {
             for &size in case.sizes {
                 done += 1;
-                eprint!("[{done}/{total_runs}] {}/{} size={size} ... ", suite.function, case.variant);
+                eprint!(
+                    "[{done}/{total_runs}] {}/{} size={size} ... ",
+                    suite.function, case.variant
+                );
 
                 match callgrind::measure(&exe, suite.function, case.variant, size, iters) {
                     Ok(m) => {
                         let n = iters as u64;
-                        eprintln!("{} instrs  {} reads  {} writes",
-                            m.instrs/n, m.mem_reads/n, m.mem_writes/n);
+                        eprintln!(
+                            "{} instrs  {} reads  {} writes",
+                            m.instrs / n,
+                            m.mem_reads / n,
+                            m.mem_writes / n
+                        );
                         wtr.write_record(&[
                             suite.function,
                             case.variant,
                             case.n_unit,
                             &size.to_string(),
-                            &(m.instrs    / n).to_string(),
+                            &(m.instrs / n).to_string(),
                             &(m.mem_reads / n).to_string(),
-                            &(m.mem_writes/ n).to_string(),
+                            &(m.mem_writes / n).to_string(),
                             &iters.to_string(),
                         ])
                         .unwrap();
@@ -182,20 +223,22 @@ fn cmd_bench(output: &str, filter: Option<&str>, iters: u32) {
 // ---------------------------------------------------------------------------
 
 fn cmd_analyze(input: &str) {
-    let mut rdr = csv::Reader::from_path(input)
-        .unwrap_or_else(|e| { eprintln!("cannot open {input}: {e}"); std::process::exit(1) });
+    let mut rdr = csv::Reader::from_path(input).unwrap_or_else(|e| {
+        eprintln!("cannot open {input}: {e}");
+        std::process::exit(1)
+    });
 
     // Group by (function, variant).
     let mut groups: HashMap<(String, String), analysis::Group> = HashMap::new();
 
     for result in rdr.records() {
         let rec = result.unwrap();
-        let function   = rec[0].to_string();
-        let variant    = rec[1].to_string();
-        let n_unit     = rec[2].to_string();
-        let size: u64  = rec[3].parse().unwrap();
-        let instrs: u64     = rec[4].parse().unwrap();
-        let mem_reads: u64  = rec.get(5).and_then(|s| s.parse().ok()).unwrap_or(0);
+        let function = rec[0].to_string();
+        let variant = rec[1].to_string();
+        let n_unit = rec[2].to_string();
+        let size: u64 = rec[3].parse().unwrap();
+        let instrs: u64 = rec[4].parse().unwrap();
+        let mem_reads: u64 = rec.get(5).and_then(|s| s.parse().ok()).unwrap_or(0);
         let mem_writes: u64 = rec.get(6).and_then(|s| s.parse().ok()).unwrap_or(0);
 
         let entry = groups
