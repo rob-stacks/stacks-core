@@ -167,12 +167,10 @@ fn src_stx_transfer_memo(_: u64) -> String {
 fn src_stacks_block_info(_: u64) -> String {
     "(define-public (bench) (ok (get-stacks-block-info? id-header-hash u0)))".into()
 }
-fn src_tenure_info(_: u64) -> String {
-    "(define-public (bench) (ok (get-tenure-info? time u0)))".into()
-}
 
 fn src_contract_hash(_: u64) -> String {
-    "(define-public (bench) (ok (contract-hash? (as-contract tx-sender))))".into()
+    // .bench is the deployed bench contract itself — always present when bench() runs.
+    "(define-public (bench) (ok (contract-hash? .bench)))".into()
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -808,7 +806,6 @@ pub static STATEFUL_SUITES: &[Suite] = &[
         "get-stacks-block-info?",
         &[ctr!(src_stacks_block_info, "bench", 0)]
     ),
-    suite!("get-tenure-info?", &[ctr!(src_tenure_info, "bench", 0)]),
     suite!(
         "contract-call?",
         &[ctr!(

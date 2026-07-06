@@ -591,7 +591,7 @@ pub static ALL_FUNCTIONS: &[FunctionEntry] = &[
     FunctionEntry {
         name: "get-tenure-info?",
         since: "3",
-        status: Status::Benchmarked,
+        status: Status::RequiresState("needs tenure/block data from real chain history"),
     },
     // -----------------------------------------------------------------------
     // Clarity 4
