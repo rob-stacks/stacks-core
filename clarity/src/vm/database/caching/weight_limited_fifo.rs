@@ -13,10 +13,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::hash::Hash;
-
-use crate::vm::collections::HashMap;
 
 /// Entry in the `WeightLimitedFifo` cache, storing the value and its weight.
 struct Entry<V> {
@@ -42,7 +40,7 @@ where
 {
     pub fn new(weight_limit: u64) -> Self {
         Self {
-            entries: crate::vm::collections::new_map(),
+            entries: HashMap::new(),
             order: VecDeque::new(),
             total_weight: 0,
             weight_limit,

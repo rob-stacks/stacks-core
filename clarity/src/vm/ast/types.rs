@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::collections::{HashMap, HashSet};
 use std::vec::Drain;
 
 use stacks_common::types::StacksEpochId;
 
 use crate::vm::ast::errors::ParseResult;
-use crate::vm::collections::{HashMap, HashSet};
 use crate::vm::representations::{PreSymbolicExpression, SymbolicExpression, TraitDefinition};
 use crate::vm::types::{QualifiedContractIdentifier, TraitIdentifier};
 use crate::vm::{ClarityName, ClarityVersion};
@@ -52,8 +52,8 @@ impl ContractAST {
             pre_expressions,
             expressions: Vec::new(),
             top_level_expression_sorting: Some(Vec::new()),
-            referenced_traits: crate::vm::collections::new_map(),
-            implemented_traits: crate::vm::collections::new_set(),
+            referenced_traits: HashMap::new(),
+            implemented_traits: HashSet::new(),
         }
     }
 

@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::BTreeMap;
 use std::collections::hash_map::Entry;
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt;
 use std::mem::replace;
 use std::time::Duration;
@@ -31,7 +31,6 @@ use super::EvalHook;
 use crate::vm::ast::ContractAST;
 use crate::vm::ast::errors::{ParseError, ParseErrorKind};
 use crate::vm::callables::{DefinedFunction, FunctionIdentifier};
-use crate::vm::collections::{HashMap, HashSet};
 use crate::vm::contracts::Contract;
 use crate::vm::costs::cost_functions::ClarityCostFunction;
 use crate::vm::costs::execution_cost::ExecutionCost;
@@ -418,12 +417,12 @@ impl Default for AssetMap {
 impl AssetMap {
     pub fn new() -> AssetMap {
         AssetMap {
-            stx_map: crate::vm::collections::new_map(),
-            burn_map: crate::vm::collections::new_map(),
-            token_map: crate::vm::collections::new_map(),
-            asset_map: crate::vm::collections::new_map(),
-            stacking_map: crate::vm::collections::new_map(),
-            pox_action_set: crate::vm::collections::new_set(),
+            stx_map: HashMap::new(),
+            burn_map: HashMap::new(),
+            token_map: HashMap::new(),
+            asset_map: HashMap::new(),
+            stacking_map: HashMap::new(),
+            pox_action_set: HashSet::new(),
         }
     }
 
@@ -682,9 +681,9 @@ impl AssetMap {
     }
 
     pub fn to_table(mut self) -> HashMap<PrincipalData, HashMap<AssetIdentifier, AssetMapEntry>> {
-        let mut map = crate::vm::collections::map_with_capacity(self.token_map.len());
+        let mut map = HashMap::with_capacity(self.token_map.len());
         for (principal, mut principal_map) in self.token_map.drain() {
-            let mut output_map = crate::vm::collections::map_with_capacity(principal_map.len());
+            let mut output_map = HashMap::with_capacity(principal_map.len());
             for (asset, amount) in principal_map.drain() {
                 output_map.insert(asset, AssetMapEntry::Token(amount));
             }
@@ -2153,16 +2152,16 @@ impl ContractContext {
     ) -> Self {
         Self {
             contract_identifier,
-            variables: crate::vm::collections::new_map(),
-            functions: crate::vm::collections::new_map(),
-            defined_traits: crate::vm::collections::new_map(),
-            implemented_traits: crate::vm::collections::new_set(),
-            persisted_names: crate::vm::collections::new_set(),
+            variables: HashMap::new(),
+            functions: HashMap::new(),
+            defined_traits: HashMap::new(),
+            implemented_traits: HashSet::new(),
+            persisted_names: HashSet::new(),
             data_size: 0,
-            meta_data_map: crate::vm::collections::new_map(),
-            meta_data_var: crate::vm::collections::new_map(),
-            meta_nft: crate::vm::collections::new_map(),
-            meta_ft: crate::vm::collections::new_map(),
+            meta_data_map: HashMap::new(),
+            meta_data_var: HashMap::new(),
+            meta_nft: HashMap::new(),
+            meta_ft: HashMap::new(),
             clarity_version,
             is_deploying: false,
         }
@@ -2241,8 +2240,8 @@ impl<'a> LocalContext<'a> {
         LocalContext {
             function_context: Option::None,
             parent: Option::None,
-            callable_contracts: crate::vm::collections::new_map(),
-            variables: crate::vm::collections::new_map(),
+            callable_contracts: HashMap::new(),
+            variables: HashMap::new(),
             depth: 0,
         }
     }
@@ -2273,8 +2272,8 @@ impl<'a> LocalContext<'a> {
             Ok(LocalContext {
                 function_context: Some(self.function_context()),
                 parent: Some(self),
-                callable_contracts: crate::vm::collections::new_map(),
-                variables: crate::vm::collections::new_map(),
+                callable_contracts: HashMap::new(),
+                variables: HashMap::new(),
                 depth: self.depth + 1,
             })
         }
@@ -2311,7 +2310,7 @@ impl CallStack {
     pub fn new() -> CallStack {
         CallStack {
             stack: Vec::new(),
-            set: crate::vm::collections::new_set(),
+            set: HashSet::new(),
             apply_depth: 0,
         }
     }
@@ -2756,8 +2755,8 @@ mod test {
         let root = LocalContext {
             function_context: None,
             parent: None,
-            callable_contracts: crate::vm::collections::new_map(),
-            variables: crate::vm::collections::new_map(),
+            callable_contracts: HashMap::new(),
+            variables: HashMap::new(),
             depth: MAX_CONTEXT_DEPTH - 1,
         };
         // We should be able to extend once successfully.

@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::collections::{HashMap, HashSet};
+
 use clarity_types::representations::ClarityName;
 use clarity_types::types::{
     PrincipalData, QualifiedContractIdentifier, StandardPrincipalData, TraitIdentifier, Value,
@@ -23,7 +25,6 @@ use stacks_common::types::StacksEpochId;
 use crate::vm::ClarityVersion;
 use crate::vm::ast::errors::{ParseErrorKind, ParseResult};
 use crate::vm::ast::types::{BuildASTPass, ContractAST, PreExpressionsDrain};
-use crate::vm::collections::{HashMap, HashSet};
 use crate::vm::representations::{PreSymbolicExpressionType, SymbolicExpression};
 
 pub struct SugarExpander {
@@ -48,8 +49,8 @@ impl SugarExpander {
     fn new(issuer: StandardPrincipalData) -> Self {
         Self {
             issuer,
-            defined_traits: crate::vm::collections::new_set(),
-            imported_traits: crate::vm::collections::new_map(),
+            defined_traits: HashSet::new(),
+            imported_traits: HashMap::new(),
         }
     }
 

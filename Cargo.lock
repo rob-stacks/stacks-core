@@ -817,7 +817,6 @@ dependencies = [
  "rstest",
  "rstest_reuse",
  "rusqlite",
- "rustc-hash",
  "serde",
  "serde_derive",
  "serde_json",

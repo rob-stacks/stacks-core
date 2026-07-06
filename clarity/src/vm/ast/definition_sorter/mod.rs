@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::collections::{HashMap, HashSet};
+
 use clarity_types::representations::ClarityName;
 
 use crate::vm::ClarityVersion;
 use crate::vm::ast::errors::{ParseError, ParseErrorKind, ParseResult};
 use crate::vm::ast::types::ContractAST;
-use crate::vm::collections::{HashMap, HashSet};
 use crate::vm::costs::cost_functions::ClarityCostFunction;
 use crate::vm::costs::{CostTracker, runtime_cost};
 use crate::vm::functions::NativeFunctions;
@@ -41,7 +42,7 @@ pub struct DefinitionSorter {
 impl DefinitionSorter {
     fn new() -> Self {
         Self {
-            top_level_expressions_map: crate::vm::collections::new_map(),
+            top_level_expressions_map: HashMap::new(),
             graph: Graph::new(),
         }
     }
@@ -458,7 +459,7 @@ struct GraphWalker {
 impl GraphWalker {
     fn new() -> Self {
         Self {
-            seen: crate::vm::collections::new_set(),
+            seen: HashSet::new(),
         }
     }
 
@@ -506,7 +507,7 @@ impl GraphWalker {
         graph: &Graph,
         sorted_indexes: &[usize],
     ) -> Option<Vec<usize>> {
-        let mut tainted: HashSet<usize> = crate::vm::collections::new_set();
+        let mut tainted: HashSet<usize> = HashSet::new();
 
         for node in sorted_indexes.iter() {
             let mut tainted_descendants_count = 0;

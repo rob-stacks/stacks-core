@@ -20,18 +20,17 @@ fn bench_contract_id() -> QualifiedContractIdentifier {
     )
 }
 
-/// Execute a case `iters` times and return the bytes transferred to/from the
-/// backing store during the iteration phase (excludes contract setup).
+/// Execute a case once and return the bytes transferred to/from the
+/// backing store (excludes contract setup).
 pub fn run(
     execution: &Execution,
     function: &str,
     size: u64,
-    iters: u32,
 ) -> Result<StoreByteCounts, String> {
     match execution {
         Execution::Snippet(s) => {
             let snippet = s.generate(function, size);
-            run_snippet(&snippet, iters)
+            run_snippet(&snippet)
         }
         Execution::Contract {
             source,
@@ -39,24 +38,14 @@ pub fn run(
             initial_ustx,
         } => {
             let src = source(size);
-            run_contract(&src, fn_name, *initial_ustx, iters)
+            run_contract(&src, fn_name, *initial_ustx)
         }
     }
 }
 
 /// Snippets have no backing store — byte counts are always zero.
-fn run_snippet(snippet: &str, iters: u32) -> Result<StoreByteCounts, String> {
-    // Warmup: execute once without counting so that all lazy-init work — regex
-    // DFA compilation, HashMap RandomState seeding — completes before the
-    // callgrind instrumentation window opens.
-    let _ = execute_v6(snippet);
-
-    crate::valgrind::start_instrumentation();
-    for _ in 0..iters {
-        execute_v6(snippet).map_err(|e| format!("{e:?}"))?;
-    }
-    crate::valgrind::stop_instrumentation();
-
+fn run_snippet(snippet: &str) -> Result<StoreByteCounts, String> {
+    execute_v6(snippet).map_err(|e| format!("{e:?}"))?;
     Ok(StoreByteCounts::default())
 }
 
@@ -64,7 +53,6 @@ fn run_contract(
     source: &str,
     fn_name: &str,
     initial_ustx: u128,
-    iters: u32,
 ) -> Result<StoreByteCounts, String> {
     let sender: PrincipalData = bench_principal().into();
     let contract_id = bench_contract_id();
@@ -88,27 +76,14 @@ fn run_contract(
         .map_err(|e| format!("contract deploy error: {e:?}"))?;
     }
 
-    // Warmup: one un-instrumented call so lazy statics (regex DFAs, etc.) are
-    // fully initialized before the callgrind counting window opens.
-    {
-        let db = marf.as_clarity_db();
-        let mut env =
-            OwnedEnvironment::new_free(false, CHAIN_ID_TESTNET, db, StacksEpochId::Epoch40);
-        let _ = env.execute_transaction(sender.clone(), None, contract_id.clone(), fn_name, &[]);
-    }
-
-    // Iteration phase: run `fn_name` iters times under the counting store.
+    // Measure one call under the counting store.
     let mut counting = CountingStore::new(&mut marf);
     {
-        crate::valgrind::start_instrumentation();
         let db = counting.as_clarity_db();
         let mut env =
             OwnedEnvironment::new_free(false, CHAIN_ID_TESTNET, db, StacksEpochId::Epoch40);
-        for _ in 0..iters {
-            env.execute_transaction(sender.clone(), None, contract_id.clone(), fn_name, &[])
-                .map_err(|e| format!("execute_transaction error: {e:?}"))?;
-        }
-        crate::valgrind::stop_instrumentation();
+        env.execute_transaction(sender.clone(), None, contract_id.clone(), fn_name, &[])
+            .map_err(|e| format!("execute_transaction error: {e:?}"))?;
     }
 
     Ok(counting.counts())

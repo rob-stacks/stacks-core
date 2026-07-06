@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::collections::HashMap;
+
 use clarity_types::representations::ClarityName;
 use clarity_types::types::{PrincipalData, Value};
 use stacks_common::types::StacksEpochId;
@@ -26,7 +28,6 @@ pub use super::errors::{
 use crate::vm::ClarityVersion;
 use crate::vm::analysis::check_analysis_timeout;
 use crate::vm::analysis::types::{AnalysisPass, ContractAnalysis};
-use crate::vm::collections::HashMap;
 use crate::vm::functions::NativeFunctions;
 use crate::vm::functions::define::DefineFunctionsParsed;
 use crate::vm::representations::SymbolicExpressionType::{
@@ -79,7 +80,7 @@ impl<'a, 'b> ReadOnlyChecker<'a, 'b> {
     ) -> ReadOnlyChecker<'a, 'b> {
         Self {
             db,
-            defined_functions: crate::vm::collections::new_map(),
+            defined_functions: HashMap::new(),
             epoch: *epoch,
             clarity_version: *version,
             time_tracker,

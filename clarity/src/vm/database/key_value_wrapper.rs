@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::collections::HashMap;
 use std::hash::Hash;
 
 use stacks_common::types::StacksEpochId;
@@ -23,7 +24,6 @@ use stacks_common::util::hash::Sha512Trunc256Sum;
 use super::clarity_store::SpecialCaseHandler;
 use super::{ClarityBackingStore, ClarityDeserializable};
 use crate::vm::Value;
-use crate::vm::collections::HashMap;
 use crate::vm::database::clarity_store::{ContractCommitment, make_contract_hash_key};
 use crate::vm::errors::{VmExecutionError, VmInternalError};
 use crate::vm::types::serialization::SerializationError;
@@ -161,8 +161,8 @@ impl Default for RollbackWrapperPersistedLog {
 impl RollbackWrapperPersistedLog {
     pub fn new() -> RollbackWrapperPersistedLog {
         RollbackWrapperPersistedLog {
-            lookup_map: crate::vm::collections::new_map(),
-            metadata_lookup_map: crate::vm::collections::new_map(),
+            lookup_map: HashMap::new(),
+            metadata_lookup_map: HashMap::new(),
             stack: Vec::new(),
         }
     }
@@ -206,8 +206,8 @@ impl<'a> RollbackWrapper<'a> {
     pub fn new(store: &'a mut dyn ClarityBackingStore) -> RollbackWrapper<'a> {
         RollbackWrapper {
             store,
-            lookup_map: crate::vm::collections::new_map(),
-            metadata_lookup_map: crate::vm::collections::new_map(),
+            lookup_map: HashMap::new(),
+            metadata_lookup_map: HashMap::new(),
             stack: Vec::new(),
             query_pending_data: true,
         }

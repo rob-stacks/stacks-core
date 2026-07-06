@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::collections::{HashMap, HashSet};
+
 use stacks_common::types::StacksEpochId;
 
 use crate::vm::analysis::errors::{StaticCheckError, StaticCheckErrorKind};
-use crate::vm::collections::{HashMap, HashSet};
 use crate::vm::types::signatures::CallableSubtype;
 use crate::vm::types::{TraitIdentifier, TypeSignature};
 use crate::vm::{ClarityName, ClarityVersion, MAX_CONTEXT_DEPTH, SymbolicExpression};
@@ -52,9 +53,9 @@ pub struct TypingContext<'a> {
 impl TypeMap {
     pub fn new(build_map: bool) -> TypeMap {
         let map = if build_map {
-            TypeMapDataType::Map(crate::vm::collections::new_map())
+            TypeMapDataType::Map(HashMap::new())
         } else {
-            TypeMapDataType::Set(crate::vm::collections::new_set())
+            TypeMapDataType::Set(HashSet::new())
         };
         TypeMap { map }
     }
@@ -99,8 +100,8 @@ impl TypingContext<'_> {
         TypingContext {
             epoch,
             clarity_version,
-            variable_types: crate::vm::collections::new_map(),
-            traits_references: crate::vm::collections::new_map(),
+            variable_types: HashMap::new(),
+            traits_references: HashMap::new(),
             depth: 0,
             parent: None,
         }
@@ -115,8 +116,8 @@ impl TypingContext<'_> {
             Ok(TypingContext {
                 epoch: self.epoch,
                 clarity_version: self.clarity_version,
-                variable_types: crate::vm::collections::new_map(),
-                traits_references: crate::vm::collections::new_map(),
+                variable_types: HashMap::new(),
+                traits_references: HashMap::new(),
                 parent: Some(self),
                 depth: self.depth + 1,
             })

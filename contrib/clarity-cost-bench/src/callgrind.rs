@@ -9,39 +9,12 @@ pub struct Metrics {
     pub instrs: u64,
 }
 
-/// Run callgrind `samples` times and return the median `Ir` count.
-///
-/// `std::collections::HashMap` uses `RandomState` (seeded by `getrandom()`),
-/// so each process produces slightly different probe-chain lengths.  Taking
-/// the median of an odd number of samples cancels one-sided outliers while
-/// keeping bench time proportional to `samples`.
-pub fn measure_median(
-    exe: &str,
-    function: &str,
-    variant: &str,
-    size: u64,
-    iters: u32,
-    samples: u32,
-) -> Result<Metrics, String> {
-    if samples <= 1 {
-        return measure(exe, function, variant, size, iters);
-    }
-    let mut counts: Vec<u64> = (0..samples)
-        .map(|_| measure(exe, function, variant, size, iters).map(|m| m.instrs))
-        .collect::<Result<Vec<_>, _>>()?;
-    counts.sort_unstable();
-    Ok(Metrics {
-        instrs: counts[counts.len() / 2],
-    })
-}
-
-/// Run the tool under callgrind for one (function, variant, size, iters) tuple.
+/// Run the tool under callgrind for one (function, variant, size) tuple.
 pub fn measure(
     exe: &str,
     function: &str,
     variant: &str,
     size: u64,
-    iters: u32,
 ) -> Result<Metrics, String> {
     let sanitise = |s: &str| -> String {
         s.chars()
@@ -62,11 +35,6 @@ pub fn measure(
             // Ir (instruction count) is fully deterministic and sufficient for
             // cost-function fitting.
             "--quiet",
-            // Instrumentation starts off; runner.rs calls CALLGRIND_START/STOP
-            // around the measured iterations so that one-time lazy-init work
-            // (regex DFA construction, HashMap RandomState seeding, etc.) that
-            // happens in the warmup call is excluded from the counts.
-            "--instr-atstart=no",
             "--",
             exe,
             "run",
@@ -76,8 +44,6 @@ pub fn measure(
             variant,
             "--size",
             &size.to_string(),
-            "--iters",
-            &iters.to_string(),
         ])
         .status()
         .map_err(|e| format!("failed to spawn valgrind: {e}"))?;

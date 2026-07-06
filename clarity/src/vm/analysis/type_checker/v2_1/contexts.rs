@@ -14,13 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::vm::ClarityVersion;
 use crate::vm::analysis::errors::{StaticCheckError, StaticCheckErrorKind};
 use crate::vm::analysis::type_checker::is_reserved_word;
 use crate::vm::analysis::types::ContractAnalysis;
-use crate::vm::collections::{HashMap, HashSet};
 use crate::vm::representations::ClarityName;
 use crate::vm::types::signatures::FunctionSignature;
 use crate::vm::types::{FunctionType, QualifiedContractIdentifier, TraitIdentifier, TypeSignature};
@@ -41,11 +40,11 @@ impl TraitContext {
     pub fn new(clarity_version: ClarityVersion) -> TraitContext {
         if clarity_version >= ClarityVersion::Clarity2 {
             Self::Clarity2 {
-                defined: crate::vm::collections::new_set(),
-                all: crate::vm::collections::new_map(),
+                defined: HashSet::new(),
+                all: HashMap::new(),
             }
         } else {
-            Self::Clarity1(crate::vm::collections::new_map())
+            Self::Clarity1(HashMap::new())
         }
     }
 
@@ -148,16 +147,16 @@ impl ContractContext {
         ContractContext {
             clarity_version,
             contract_identifier,
-            variable_types: crate::vm::collections::new_map(),
-            private_function_types: crate::vm::collections::new_map(),
-            public_function_types: crate::vm::collections::new_map(),
-            read_only_function_types: crate::vm::collections::new_map(),
-            map_types: crate::vm::collections::new_map(),
-            persisted_variable_types: crate::vm::collections::new_map(),
-            fungible_tokens: crate::vm::collections::new_set(),
-            non_fungible_tokens: crate::vm::collections::new_map(),
+            variable_types: HashMap::new(),
+            private_function_types: HashMap::new(),
+            public_function_types: HashMap::new(),
+            read_only_function_types: HashMap::new(),
+            map_types: HashMap::new(),
+            persisted_variable_types: HashMap::new(),
+            fungible_tokens: HashSet::new(),
+            non_fungible_tokens: HashMap::new(),
             traits: TraitContext::new(clarity_version),
-            implemented_traits: crate::vm::collections::new_set(),
+            implemented_traits: HashSet::new(),
         }
     }
 

@@ -6,7 +6,6 @@ mod coverage;
 mod runner;
 mod snippet;
 mod suites;
-mod valgrind;
 
 use std::collections::HashMap;
 
@@ -31,12 +30,6 @@ enum Commands {
         /// Comma-separated function names to benchmark (default: all benchmarkable).
         #[arg(short, long)]
         functions: Option<String>,
-        /// Number of snippet repetitions per Callgrind invocation.
-        #[arg(short, long, default_value = "100")]
-        iters: u32,
-        /// Callgrind invocations per data point; median is reported.
-        #[arg(short, long, default_value = "1")]
-        samples: u32,
     },
     /// Internal: run one (function, variant) under Callgrind — called by `bench`.
     Run {
@@ -46,8 +39,6 @@ enum Commands {
         variant: String,
         #[arg(long)]
         size: u64,
-        #[arg(long, default_value = "100")]
-        iters: u32,
     },
     /// Read a results CSV and print curve-fit + model-comparison analysis.
     Analyze {
@@ -70,14 +61,11 @@ fn main() {
             function,
             variant,
             size,
-            iters,
-        } => cmd_run(&function, &variant, size, iters),
+        } => cmd_run(&function, &variant, size),
         Commands::Bench {
             output,
             functions,
-            iters,
-            samples,
-        } => cmd_bench(&output, functions.as_deref(), iters, samples),
+        } => cmd_bench(&output, functions.as_deref()),
         Commands::Analyze { input } => cmd_analyze(&input),
     }
 }
@@ -126,13 +114,13 @@ fn cmd_list(ready_only: bool) {
 // run  (inner mode)
 // ---------------------------------------------------------------------------
 
-fn cmd_run(function: &str, variant: &str, size: u64, iters: u32) {
+fn cmd_run(function: &str, variant: &str, size: u64) {
     let (_, case) = suites::find(function, variant).unwrap_or_else(|| {
         eprintln!("unknown function/variant: {function} / {variant}");
         std::process::exit(1);
     });
 
-    if let Err(e) = runner::run(&case.execution, function, size, iters) {
+    if let Err(e) = runner::run(&case.execution, function, size) {
         eprintln!("error running '{function}/{variant}' at size {size}: {e}");
         std::process::exit(1);
     }
@@ -142,7 +130,11 @@ fn cmd_run(function: &str, variant: &str, size: u64, iters: u32) {
 // bench  (orchestrator)
 // ---------------------------------------------------------------------------
 
-fn cmd_bench(output: &str, filter: Option<&str>, iters: u32, samples: u32) {
+fn round1k(x: u64) -> u64 {
+    (x + 500) / 1000 * 1000
+}
+
+fn cmd_bench(output: &str, filter: Option<&str>) {
     let exe = std::env::current_exe()
         .expect("cannot determine own executable path")
         .to_string_lossy()
@@ -178,10 +170,9 @@ fn cmd_bench(output: &str, filter: Option<&str>, iters: u32, samples: u32) {
         "variant",
         "n_unit",
         "size",
-        "instrs_per_call",
-        "store_bytes_read_per_call",
-        "store_bytes_written_per_call",
-        "iters",
+        "instrs",
+        "store_bytes_read",
+        "store_bytes_written",
     ])
     .unwrap();
 
@@ -194,34 +185,26 @@ fn cmd_bench(output: &str, filter: Option<&str>, iters: u32, samples: u32) {
                     suite.function, case.variant
                 );
 
-                let cg = callgrind::measure_median(
-                    &exe,
-                    suite.function,
-                    case.variant,
-                    size,
-                    iters,
-                    samples,
-                );
-                let store = runner::run(&case.execution, suite.function, size, iters);
+                let cg = callgrind::measure(&exe, suite.function, case.variant, size);
+                let store = runner::run(&case.execution, suite.function, size);
 
                 match (cg, store) {
                     (Ok(m), Ok(s)) => {
-                        let n = iters as u64;
+                        let instrs = round1k(m.instrs);
                         eprintln!(
                             "{} instrs  {} store-read  {} store-written",
-                            m.instrs / n,
-                            s.bytes_read / n,
-                            s.bytes_written / n,
+                            instrs,
+                            s.bytes_read,
+                            s.bytes_written,
                         );
                         wtr.write_record(&[
                             suite.function,
                             case.variant,
                             case.n_unit,
                             &size.to_string(),
-                            &(m.instrs / n).to_string(),
-                            &(s.bytes_read / n).to_string(),
-                            &(s.bytes_written / n).to_string(),
-                            &iters.to_string(),
+                            &instrs.to_string(),
+                            &s.bytes_read.to_string(),
+                            &s.bytes_written.to_string(),
                         ])
                         .unwrap();
                         wtr.flush().unwrap();
