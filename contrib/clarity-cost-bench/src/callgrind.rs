@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -8,10 +7,6 @@ use std::process::Command;
 pub struct Metrics {
     /// Instruction references (Ir) — total instructions executed.
     pub instrs: u64,
-    /// Data reads (Dr) — memory read accesses.
-    pub mem_reads: u64,
-    /// Data writes (Dw) — memory write accesses.
-    pub mem_writes: u64,
 }
 
 /// Run the tool under callgrind for one (function, variant, size, iters) tuple.
@@ -36,13 +31,10 @@ pub fn measure(
         .args([
             "--tool=callgrind",
             &out_file_arg,
-            "--cache-sim=yes",     // adds Dr + Dw alongside Ir
-            // Pin cache geometry so results are identical across machines/runs.
-            // Auto-detection from the host CPU would make Dr/Dw non-reproducible.
-            // Values reflect a typical x86-64 configuration.
-            "--I1=32768,8,64",     // 32 KB, 8-way, 64 B lines
-            "--D1=32768,8,64",
-            "--LL=8388608,16,64",  // 8 MB, 16-way, 64 B lines
+            // Cache simulation is intentionally disabled: valgrind ignores --LL
+            // when it detects hardware L3, making Dr/Dw machine-dependent.
+            // Ir (instruction count) is fully deterministic and sufficient for
+            // cost-function fitting.
             "--quiet",
             "--",
             exe,
@@ -72,25 +64,21 @@ pub fn measure(
 
 /// Parse the callgrind output file.
 ///
-/// Looks for the `events:` line to determine column positions, then reads
-/// the `totals:` (or `summary:`) line to extract `Ir`, `Dr`, `Dw` counts.
+/// Looks for the `events:` line to find the `Ir` column, then reads the
+/// `totals:` (or `summary:`) line to extract the instruction count.
 pub fn parse_metrics(content: &str) -> Result<Metrics, String> {
-    // Build a column-index map from the `events:` line.
-    let col_map: HashMap<&str, usize> = content
+    let ir_col: usize = content
         .lines()
         .find(|l| l.trim_start().starts_with("events:"))
-        .map(|l| {
+        .and_then(|l| {
             l.trim_start()
                 .strip_prefix("events:")
                 .unwrap_or("")
                 .split_whitespace()
-                .enumerate()
-                .map(|(i, name)| (name, i))
-                .collect()
+                .position(|name| name == "Ir")
         })
-        .unwrap_or_default();
+        .ok_or_else(|| "no Ir column in callgrind events line".to_string())?;
 
-    // Find the totals/summary line (last occurrence wins).
     let totals_line = content
         .lines()
         .rev()
@@ -100,25 +88,14 @@ pub fn parse_metrics(content: &str) -> Result<Metrics, String> {
         })
         .ok_or_else(|| "no totals/summary line in callgrind output".to_string())?;
 
-    let values: Vec<u64> = totals_line
+    let instrs = totals_line
         .split_whitespace()
         .skip(1) // skip "totals:" / "summary:"
-        .map(|s| s.parse::<u64>().unwrap_or(0))
-        .collect();
+        .nth(ir_col)
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
 
-    let get = |name: &str| -> u64 {
-        col_map
-            .get(name)
-            .and_then(|&i| values.get(i))
-            .copied()
-            .unwrap_or(0)
-    };
-
-    Ok(Metrics {
-        instrs: get("Ir"),
-        mem_reads: get("Dr"),
-        mem_writes: get("Dw"),
-    })
+    Ok(Metrics { instrs })
 }
 
 #[cfg(test)]
@@ -126,36 +103,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_with_cache_sim() {
-        let sample = "\
-events: Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw
-fl=???
-fn=(below main)
-0 1 2 3 4 5 6 7 8 9
-totals: 987654321 111111111 22222222 100 200 300 50 100 150
-";
-        let m = parse_metrics(sample).unwrap();
-        assert_eq!(m.instrs, 987_654_321);
-        assert_eq!(m.mem_reads, 111_111_111);
-        assert_eq!(m.mem_writes, 22_222_222);
+    fn parse_ir_only() {
+        let sample = "events: Ir\ntotals: 123456\n";
+        assert_eq!(parse_metrics(sample).unwrap().instrs, 123_456);
     }
 
     #[test]
-    fn parse_ir_only() {
-        // Without --simulate-cache, only Ir is present.
-        let sample = "events: Ir\ntotals: 123456\n";
-        let m = parse_metrics(sample).unwrap();
-        assert_eq!(m.instrs, 123_456);
-        assert_eq!(m.mem_reads, 0);
-        assert_eq!(m.mem_writes, 0);
+    fn parse_ir_among_other_events() {
+        let sample = "events: Ir Dr Dw\ntotals: 987654321 111111111 22222222\n";
+        assert_eq!(parse_metrics(sample).unwrap().instrs, 987_654_321);
     }
 
     #[test]
     fn parse_summary_fallback() {
         let sample = "events: Ir Dr Dw\nsummary: 111 222 333\n";
-        let m = parse_metrics(sample).unwrap();
-        assert_eq!(m.instrs, 111);
-        assert_eq!(m.mem_reads, 222);
-        assert_eq!(m.mem_writes, 333);
+        assert_eq!(parse_metrics(sample).unwrap().instrs, 111);
     }
 }

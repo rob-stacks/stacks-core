@@ -870,6 +870,7 @@ dependencies = [
  "clarity 0.0.1",
  "clarity-types 0.0.1",
  "csv",
+ "rusqlite",
  "serde",
  "stacks-common 0.0.1",
 ]

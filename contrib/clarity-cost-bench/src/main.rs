@@ -1,6 +1,7 @@
 mod analysis;
 mod callgrind;
 mod cost_model;
+mod counting_store;
 mod coverage;
 mod runner;
 mod snippet;
@@ -173,8 +174,8 @@ fn cmd_bench(output: &str, filter: Option<&str>, iters: u32) {
         "n_unit",
         "size",
         "instrs_per_call",
-        "mem_reads_per_call",
-        "mem_writes_per_call",
+        "store_bytes_read_per_call",
+        "store_bytes_written_per_call",
         "iters",
     ])
     .unwrap();
@@ -188,14 +189,17 @@ fn cmd_bench(output: &str, filter: Option<&str>, iters: u32) {
                     suite.function, case.variant
                 );
 
-                match callgrind::measure(&exe, suite.function, case.variant, size, iters) {
-                    Ok(m) => {
+                let cg = callgrind::measure(&exe, suite.function, case.variant, size, iters);
+                let store = runner::run(&case.execution, suite.function, size, iters);
+
+                match (cg, store) {
+                    (Ok(m), Ok(s)) => {
                         let n = iters as u64;
                         eprintln!(
-                            "{} instrs  {} reads  {} writes",
+                            "{} instrs  {} store-read  {} store-written",
                             m.instrs / n,
-                            m.mem_reads / n,
-                            m.mem_writes / n
+                            s.bytes_read / n,
+                            s.bytes_written / n,
                         );
                         wtr.write_record(&[
                             suite.function,
@@ -203,14 +207,14 @@ fn cmd_bench(output: &str, filter: Option<&str>, iters: u32) {
                             case.n_unit,
                             &size.to_string(),
                             &(m.instrs / n).to_string(),
-                            &(m.mem_reads / n).to_string(),
-                            &(m.mem_writes / n).to_string(),
+                            &(s.bytes_read / n).to_string(),
+                            &(s.bytes_written / n).to_string(),
                             &iters.to_string(),
                         ])
                         .unwrap();
                         wtr.flush().unwrap();
                     }
-                    Err(e) => eprintln!("FAILED: {e}"),
+                    (Err(e), _) | (_, Err(e)) => eprintln!("FAILED: {e}"),
                 }
             }
         }
@@ -238,8 +242,8 @@ fn cmd_analyze(input: &str) {
         let n_unit = rec[2].to_string();
         let size: u64 = rec[3].parse().unwrap();
         let instrs: u64 = rec[4].parse().unwrap();
-        let mem_reads: u64 = rec.get(5).and_then(|s| s.parse().ok()).unwrap_or(0);
-        let mem_writes: u64 = rec.get(6).and_then(|s| s.parse().ok()).unwrap_or(0);
+        let bytes_read: u64 = rec.get(5).and_then(|s| s.parse().ok()).unwrap_or(0);
+        let bytes_written: u64 = rec.get(6).and_then(|s| s.parse().ok()).unwrap_or(0);
 
         let entry = groups
             .entry((function.clone(), variant.clone()))
@@ -249,13 +253,13 @@ fn cmd_analyze(input: &str) {
                 n_unit,
                 sizes: Vec::new(),
                 instrs: Vec::new(),
-                mem_reads: Vec::new(),
-                mem_writes: Vec::new(),
+                bytes_read: Vec::new(),
+                bytes_written: Vec::new(),
             });
         entry.sizes.push(size);
         entry.instrs.push(instrs);
-        entry.mem_reads.push(mem_reads);
-        entry.mem_writes.push(mem_writes);
+        entry.bytes_read.push(bytes_read);
+        entry.bytes_written.push(bytes_written);
     }
 
     // Calibrate from the + / uint group (must happen before printing).

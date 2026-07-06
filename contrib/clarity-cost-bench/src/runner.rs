@@ -6,10 +6,10 @@ use clarity_types::{ClarityVersion, ContractName};
 use stacks_common::consts::CHAIN_ID_TESTNET;
 use stacks_common::types::StacksEpochId;
 
+use crate::counting_store::{CountingStore, StoreByteCounts};
 use crate::snippet::Snippet;
 use crate::suites::Execution;
 
-/// The principal under which benchmark contracts are deployed.
 fn bench_principal() -> StandardPrincipalData {
     StandardPrincipalData::transient()
 }
@@ -21,8 +21,14 @@ fn bench_contract_id() -> QualifiedContractIdentifier {
     )
 }
 
-/// Execute a case `iters` times, dispatching on its execution kind.
-pub fn run(execution: &Execution, function: &str, size: u64, iters: u32) -> Result<(), String> {
+/// Execute a case `iters` times and return the bytes transferred to/from the
+/// backing store during the iteration phase (excludes contract setup).
+pub fn run(
+    execution: &Execution,
+    function: &str,
+    size: u64,
+    iters: u32,
+) -> Result<StoreByteCounts, String> {
     match execution {
         Execution::Snippet(s) => {
             let snippet = s.generate(function, size);
@@ -39,35 +45,53 @@ pub fn run(execution: &Execution, function: &str, size: u64, iters: u32) -> Resu
     }
 }
 
-/// Evaluate a standalone Clarity 6 snippet `iters` times.
-fn run_snippet(snippet: &str, iters: u32) -> Result<(), String> {
+/// Snippets have no backing store — byte counts are always zero.
+fn run_snippet(snippet: &str, iters: u32) -> Result<StoreByteCounts, String> {
     for _ in 0..iters {
         execute_v6(snippet).map_err(|e| format!("{e:?}"))?;
     }
-    Ok(())
+    Ok(StoreByteCounts::default())
 }
 
-/// Deploy a Clarity 6 contract in an in-memory environment, optionally fund
-/// `tx-sender` via `stx_faucet`, then call `fn_name` `iters` times.
-fn run_contract(source: &str, fn_name: &str, initial_ustx: u128, iters: u32) -> Result<(), String> {
-    let mut marf = MemoryBackingStore::new();
-    let db = marf.as_clarity_db();
-    let mut env = OwnedEnvironment::new_free(false, CHAIN_ID_TESTNET, db, StacksEpochId::Epoch40);
-
+fn run_contract(
+    source: &str,
+    fn_name: &str,
+    initial_ustx: u128,
+    iters: u32,
+) -> Result<StoreByteCounts, String> {
     let sender: PrincipalData = bench_principal().into();
     let contract_id = bench_contract_id();
 
-    if initial_ustx > 0 {
-        env.stx_faucet(&sender, initial_ustx);
-    }
+    let mut marf = MemoryBackingStore::new();
 
-    env.initialize_versioned_contract(contract_id.clone(), ClarityVersion::Clarity6, source, None)
+    // Setup phase: deploy contract. Not counted — we only want per-call costs.
+    {
+        let db = marf.as_clarity_db();
+        let mut env =
+            OwnedEnvironment::new_free(false, CHAIN_ID_TESTNET, db, StacksEpochId::Epoch40);
+        if initial_ustx > 0 {
+            env.stx_faucet(&sender, initial_ustx);
+        }
+        env.initialize_versioned_contract(
+            contract_id.clone(),
+            ClarityVersion::Clarity6,
+            source,
+            None,
+        )
         .map_err(|e| format!("contract deploy error: {e:?}"))?;
-
-    for _ in 0..iters {
-        env.execute_transaction(sender.clone(), None, contract_id.clone(), fn_name, &[])
-            .map_err(|e| format!("execute_transaction error: {e:?}"))?;
     }
 
-    Ok(())
+    // Iteration phase: run `fn_name` iters times under the counting store.
+    let mut counting = CountingStore::new(&mut marf);
+    {
+        let db = counting.as_clarity_db();
+        let mut env =
+            OwnedEnvironment::new_free(false, CHAIN_ID_TESTNET, db, StacksEpochId::Epoch40);
+        for _ in 0..iters {
+            env.execute_transaction(sender.clone(), None, contract_id.clone(), fn_name, &[])
+                .map_err(|e| format!("execute_transaction error: {e:?}"))?;
+        }
+    }
+
+    Ok(counting.counts())
 }

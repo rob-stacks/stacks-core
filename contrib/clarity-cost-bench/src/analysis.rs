@@ -6,8 +6,8 @@ pub struct Group {
     pub n_unit: String,
     pub sizes: Vec<u64>,
     pub instrs: Vec<u64>,
-    pub mem_reads: Vec<u64>,
-    pub mem_writes: Vec<u64>,
+    pub bytes_read: Vec<u64>,
+    pub bytes_written: Vec<u64>,
 }
 
 // ── calibration ──────────────────────────────────────────────────────────────
@@ -261,7 +261,12 @@ pub fn print_report(g: &Group, instrs_per_cost_unit: Option<f64>) {
 
     println!("──────────────────────────────────────────────────────────────────────");
     metric_block("instrs/call", &g.sizes, &g.instrs, &g.n_unit);
-    metric_block("mem-reads/call", &g.sizes, &g.mem_reads, &g.n_unit);
-    metric_block("mem-writes/call", &g.sizes, &g.mem_writes, &g.n_unit);
+    metric_block("store-bytes-read/call", &g.sizes, &g.bytes_read, &g.n_unit);
+    metric_block(
+        "store-bytes-written/call",
+        &g.sizes,
+        &g.bytes_written,
+        &g.n_unit,
+    );
     println!("══════════════════════════════════════════════════════════════════════");
 }
