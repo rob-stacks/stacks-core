@@ -17,6 +17,7 @@ members = [
     "contrib/stacks-inspect",
     "contrib/clarity-cli",
     "contrib/stacks-cli",
+    "contrib/marf-squash",
     "contrib/clarity-cost-bench"
 ]
 

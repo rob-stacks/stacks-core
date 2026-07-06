@@ -36,7 +36,13 @@ pub fn measure(
         .args([
             "--tool=callgrind",
             &out_file_arg,
-            "--simulate-cache=yes", // adds Dr + Dw alongside Ir
+            "--cache-sim=yes",     // adds Dr + Dw alongside Ir
+            // Pin cache geometry so results are identical across machines/runs.
+            // Auto-detection from the host CPU would make Dr/Dw non-reproducible.
+            // Values reflect a typical x86-64 configuration.
+            "--I1=32768,8,64",     // 32 KB, 8-way, 64 B lines
+            "--D1=32768,8,64",
+            "--LL=8388608,16,64",  // 8 MB, 16-way, 64 B lines
             "--quiet",
             "--",
             exe,
