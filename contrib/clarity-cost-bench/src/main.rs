@@ -133,6 +133,10 @@ fn cmd_run(function: &str, variant: &str, size: u64) {
 /// RandomState-based checks are unreliable because std uses a thread-local counter
 /// that increments on every call, making two consecutive RandomState instances
 /// always differ regardless of the underlying seed.
+///
+/// Only meaningful on Linux; valgrind itself is Linux-only so we return true
+/// (suppress the warning) on other platforms.
+#[cfg(target_os = "linux")]
 fn getrandom_is_patched() -> bool {
     unsafe extern "C" {
         fn getrandom(buf: *mut u8, buflen: usize, flags: u32) -> isize;
@@ -145,6 +149,11 @@ fn getrandom_is_patched() -> bool {
     buf = [0xffu8; 16];
     let n2 = unsafe { getrandom(buf.as_mut_ptr(), buf.len(), 0) };
     n2 == buf.len() as isize && buf.iter().all(|&b| b == 0)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn getrandom_is_patched() -> bool {
+    true
 }
 
 // ---------------------------------------------------------------------------

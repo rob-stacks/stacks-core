@@ -302,8 +302,8 @@ pub static ALL_SUITES: &[Suite] = &[
         &[
             snip!(Snippet::Fixed("some", "(some u1) val val u0")),
             snip!(Snippet::Fixed("none", "none val u0 u1")),
-            snip!(Snippet::Fixed("ok", "(ok u1) val val u0")),
-            snip!(Snippet::Fixed("err", "(err u1) val u0 val")),
+            snip!(Snippet::Fixed("ok", "(ok u1) v v e u0")),
+            snip!(Snippet::Fixed("err", "(err u1) v u0 e e")),
         ]
     ),
     // map/filter/fold: only function-compatible element types
