@@ -14,11 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::vm::collections::{HashMap, HashSet};
-
 use stacks_common::types::StacksEpochId;
 
 use crate::vm::analysis::errors::{StaticCheckError, StaticCheckErrorKind};
+use crate::vm::collections::{HashMap, HashSet};
 use crate::vm::types::signatures::CallableSubtype;
 use crate::vm::types::{TraitIdentifier, TypeSignature};
 use crate::vm::{ClarityName, ClarityVersion, MAX_CONTEXT_DEPTH, SymbolicExpression};

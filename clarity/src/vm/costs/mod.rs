@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::vm::collections::HashMap;
 use std::{cmp, fmt};
 
 use costs_1::Costs1;
@@ -29,6 +28,7 @@ use stacks_common::types::StacksEpochId;
 
 use super::errors::{RuntimeCheckErrorKind, RuntimeError};
 use crate::boot_util::boot_code_id;
+use crate::vm::collections::HashMap;
 use crate::vm::contexts::{ExecutionState, GlobalContext, InvocationContext};
 use crate::vm::contracts::Contract;
 use crate::vm::costs::cost_functions::ClarityCostFunction;

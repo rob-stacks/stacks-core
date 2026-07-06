@@ -7,7 +7,6 @@ use stacks_common::consts::CHAIN_ID_TESTNET;
 use stacks_common::types::StacksEpochId;
 
 use crate::counting_store::{CountingStore, StoreByteCounts};
-use crate::snippet::Snippet;
 use crate::suites::Execution;
 
 fn bench_principal() -> StandardPrincipalData {

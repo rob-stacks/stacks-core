@@ -62,17 +62,6 @@ impl ElemType {
     }
 }
 
-// ── All element types we benchmark ──────────────────────────────────────────
-
-pub const ALL_ELEM_TYPES: &[ElemType] = &[
-    ElemType::Uint,
-    ElemType::Int,
-    ElemType::Bool,
-    ElemType::AsciiStr,
-    ElemType::Buf,
-    ElemType::OptUint,
-];
-
 // ── Snippet enum ─────────────────────────────────────────────────────────────
 
 /// Declarative description of how to build a Clarity 6 snippet.

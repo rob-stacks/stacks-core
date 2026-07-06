@@ -193,7 +193,14 @@ fn cmd_bench(output: &str, filter: Option<&str>, iters: u32, samples: u32) {
                     suite.function, case.variant
                 );
 
-                let cg = callgrind::measure_median(&exe, suite.function, case.variant, size, iters, samples);
+                let cg = callgrind::measure_median(
+                    &exe,
+                    suite.function,
+                    case.variant,
+                    size,
+                    iters,
+                    samples,
+                );
                 let store = runner::run(&case.execution, suite.function, size, iters);
 
                 match (cg, store) {

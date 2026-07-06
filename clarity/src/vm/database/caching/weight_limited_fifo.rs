@@ -14,8 +14,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::collections::VecDeque;
-use crate::vm::collections::HashMap;
 use std::hash::Hash;
+
+use crate::vm::collections::HashMap;
 
 /// Entry in the `WeightLimitedFifo` cache, storing the value and its weight.
 struct Entry<V> {

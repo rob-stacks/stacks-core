@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::vm::collections::HashMap;
 use std::hash::Hash;
 
 use stacks_common::types::StacksEpochId;
@@ -24,6 +23,7 @@ use stacks_common::util::hash::Sha512Trunc256Sum;
 use super::clarity_store::SpecialCaseHandler;
 use super::{ClarityBackingStore, ClarityDeserializable};
 use crate::vm::Value;
+use crate::vm::collections::HashMap;
 use crate::vm::database::clarity_store::{ContractCommitment, make_contract_hash_key};
 use crate::vm::errors::{VmExecutionError, VmInternalError};
 use crate::vm::types::serialization::SerializationError;

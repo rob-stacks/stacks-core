@@ -14,9 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::hash_map::Entry;
 use std::collections::BTreeMap;
-use crate::vm::collections::{HashMap, HashSet};
+use std::collections::hash_map::Entry;
 use std::fmt;
 use std::mem::replace;
 use std::time::Duration;
@@ -32,6 +31,7 @@ use super::EvalHook;
 use crate::vm::ast::ContractAST;
 use crate::vm::ast::errors::{ParseError, ParseErrorKind};
 use crate::vm::callables::{DefinedFunction, FunctionIdentifier};
+use crate::vm::collections::{HashMap, HashSet};
 use crate::vm::contracts::Contract;
 use crate::vm::costs::cost_functions::ClarityCostFunction;
 use crate::vm::costs::execution_cost::ExecutionCost;

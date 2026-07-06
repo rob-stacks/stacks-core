@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::vm::collections::HashMap;
-
 use clarity_types::representations::ClarityName;
 use clarity_types::types::{PrincipalData, Value};
 use stacks_common::types::StacksEpochId;
@@ -28,6 +26,7 @@ pub use super::errors::{
 use crate::vm::ClarityVersion;
 use crate::vm::analysis::check_analysis_timeout;
 use crate::vm::analysis::types::{AnalysisPass, ContractAnalysis};
+use crate::vm::collections::HashMap;
 use crate::vm::functions::NativeFunctions;
 use crate::vm::functions::define::DefineFunctionsParsed;
 use crate::vm::representations::SymbolicExpressionType::{

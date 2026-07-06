@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::vm::collections::HashMap;
-
 use clarity_types::representations::ClarityName;
 use clarity_types::types::{QualifiedContractIdentifier, TraitIdentifier};
 use stacks_common::types::StacksEpochId;
@@ -23,6 +21,7 @@ use stacks_common::types::StacksEpochId;
 use crate::vm::ClarityVersion;
 use crate::vm::ast::errors::{ParseError, ParseErrorKind, ParseResult};
 use crate::vm::ast::types::{BuildASTPass, ContractAST};
+use crate::vm::collections::HashMap;
 use crate::vm::functions::define::DefineFunctions;
 use crate::vm::representations::PreSymbolicExpressionType::{
     Atom, FieldIdentifier, List, SugaredFieldIdentifier, TraitReference, Tuple,

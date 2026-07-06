@@ -15,12 +15,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use std::collections::BTreeMap;
-use crate::vm::collections::{HashMap, HashSet};
 
 use crate::vm::ClarityVersion;
 use crate::vm::analysis::errors::{StaticCheckError, StaticCheckErrorKind};
 use crate::vm::analysis::type_checker::is_reserved_word;
 use crate::vm::analysis::types::ContractAnalysis;
+use crate::vm::collections::{HashMap, HashSet};
 use crate::vm::representations::ClarityName;
 use crate::vm::types::signatures::FunctionSignature;
 use crate::vm::types::{FunctionType, QualifiedContractIdentifier, TraitIdentifier, TypeSignature};

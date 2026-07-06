@@ -117,11 +117,6 @@ static COST_TUPLE_MERGE: CostSpec = CostSpec {
     eval: |n| logn(n, 1, 1),
 };
 
-// conversions (constant)
-static COST_INT_CAST: CostSpec = CostSpec {
-    formula: "constant(1)",
-    eval: |_| 1,
-};
 static COST_PRINT: CostSpec = CostSpec {
     formula: "linear(n, 1, 1)",
     eval: |n| linear(n, 1, 1),

@@ -14,13 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::vm::collections::{HashMap, HashSet};
-
 use clarity_types::representations::ClarityName;
 
 use crate::vm::ClarityVersion;
 use crate::vm::ast::errors::{ParseError, ParseErrorKind, ParseResult};
 use crate::vm::ast::types::ContractAST;
+use crate::vm::collections::{HashMap, HashSet};
 use crate::vm::costs::cost_functions::ClarityCostFunction;
 use crate::vm::costs::{CostTracker, runtime_cost};
 use crate::vm::functions::NativeFunctions;

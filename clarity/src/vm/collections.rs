@@ -1,3 +1,6 @@
+#[cfg(not(feature = "bench"))]
+pub use std::collections::{HashMap, HashSet};
+
 /// HashMap / HashSet type aliases for the Clarity VM execution path.
 ///
 /// With the `bench` feature enabled these resolve to `FxHashMap`/`FxHashSet`
@@ -6,8 +9,6 @@
 /// used unchanged.
 #[cfg(feature = "bench")]
 pub use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
-#[cfg(not(feature = "bench"))]
-pub use std::collections::{HashMap, HashSet};
 
 /// Construct an empty `HashMap`.  Use this instead of `HashMap::new()` so the
 /// call compiles with both the default `RandomState` and the `FxBuildHasher`
