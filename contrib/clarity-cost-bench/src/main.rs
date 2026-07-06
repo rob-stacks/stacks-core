@@ -129,15 +129,22 @@ fn cmd_run(function: &str, variant: &str, size: u64) {
 
 /// Returns true when getrandom() is patched to always return 0.
 ///
-/// With a zero seed every `RandomState` is derived from the same fixed value,
-/// so two independently-created states hash identical inputs to the same
-/// output.  With a real OS seed the two states almost certainly differ.
+/// Calls the C `getrandom` function directly so LD_PRELOAD interception applies.
+/// RandomState-based checks are unreliable because std uses a thread-local counter
+/// that increments on every call, making two consecutive RandomState instances
+/// always differ regardless of the underlying seed.
 fn getrandom_is_patched() -> bool {
-    use std::collections::hash_map::RandomState;
-    use std::hash::{BuildHasher, Hasher};
-    let a = RandomState::new();
-    let b = RandomState::new();
-    a.build_hasher().finish() == b.build_hasher().finish()
+    unsafe extern "C" {
+        fn getrandom(buf: *mut u8, buflen: usize, flags: u32) -> isize;
+    }
+    let mut buf = [0xffu8; 16];
+    let n1 = unsafe { getrandom(buf.as_mut_ptr(), buf.len(), 0) };
+    if n1 != buf.len() as isize || buf.iter().any(|&b| b != 0) {
+        return false;
+    }
+    buf = [0xffu8; 16];
+    let n2 = unsafe { getrandom(buf.as_mut_ptr(), buf.len(), 0) };
+    n2 == buf.len() as isize && buf.iter().all(|&b| b == 0)
 }
 
 // ---------------------------------------------------------------------------
@@ -211,9 +218,7 @@ fn cmd_bench(output: &str, filter: Option<&str>) {
                         let instrs = m.instrs;
                         eprintln!(
                             "{} instrs  {} store-read  {} store-written",
-                            instrs,
-                            s.bytes_read,
-                            s.bytes_written,
+                            instrs, s.bytes_read, s.bytes_written,
                         );
                         wtr.write_record(&[
                             suite.function,

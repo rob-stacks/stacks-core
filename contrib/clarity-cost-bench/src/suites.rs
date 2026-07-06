@@ -164,18 +164,13 @@ fn src_stx_transfer_memo(_: u64) -> String {
      (define-public (bench) (stx-transfer-memo? u1 tx-sender dst 0x00))"
         .into()
 }
-fn src_block_info(_: u64) -> String {
-    "(define-public (bench) (ok (get-block-info? time u0)))".into()
-}
 fn src_stacks_block_info(_: u64) -> String {
     "(define-public (bench) (ok (get-stacks-block-info? id-header-hash u0)))".into()
 }
 fn src_tenure_info(_: u64) -> String {
     "(define-public (bench) (ok (get-tenure-info? time u0)))".into()
 }
-fn src_burn_block_info(_: u64) -> String {
-    "(define-public (bench) (ok (get-burn-block-info? header-hash u0)))".into()
-}
+
 fn src_contract_hash(_: u64) -> String {
     "(define-public (bench) (ok (contract-hash? (as-contract tx-sender))))".into()
 }

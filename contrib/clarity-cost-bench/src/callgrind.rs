@@ -10,12 +10,7 @@ pub struct Metrics {
 }
 
 /// Run the tool under callgrind for one (function, variant, size) tuple.
-pub fn measure(
-    exe: &str,
-    function: &str,
-    variant: &str,
-    size: u64,
-) -> Result<Metrics, String> {
+pub fn measure(exe: &str, function: &str, variant: &str, size: u64) -> Result<Metrics, String> {
     let sanitise = |s: &str| -> String {
         s.chars()
             .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })

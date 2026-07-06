@@ -22,11 +22,7 @@ fn bench_contract_id() -> QualifiedContractIdentifier {
 
 /// Execute a case once and return the bytes transferred to/from the
 /// backing store (excludes contract setup).
-pub fn run(
-    execution: &Execution,
-    function: &str,
-    size: u64,
-) -> Result<StoreByteCounts, String> {
+pub fn run(execution: &Execution, function: &str, size: u64) -> Result<StoreByteCounts, String> {
     match execution {
         Execution::Snippet(s) => {
             let snippet = s.generate(function, size);
