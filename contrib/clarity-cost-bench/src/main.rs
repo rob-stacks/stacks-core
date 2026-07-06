@@ -30,12 +30,6 @@ enum Commands {
         /// Comma-separated function names to benchmark (default: all benchmarkable).
         #[arg(short, long)]
         functions: Option<String>,
-        /// Report raw instruction counts with no divisor applied.
-        #[arg(long)]
-        raw: bool,
-        /// Divide instruction counts by this value before reporting (default: 1000).
-        #[arg(long, default_value = "1000")]
-        round: u64,
     },
     /// Internal: run one (function, variant) under Callgrind — called by `bench`.
     Run {
@@ -68,12 +62,7 @@ fn main() {
             variant,
             size,
         } => cmd_run(&function, &variant, size),
-        Commands::Bench {
-            output,
-            functions,
-            raw,
-            round,
-        } => cmd_bench(&output, functions.as_deref(), raw, round),
+        Commands::Bench { output, functions } => cmd_bench(&output, functions.as_deref()),
         Commands::Analyze { input } => cmd_analyze(&input),
     }
 }
@@ -155,7 +144,7 @@ fn getrandom_is_patched() -> bool {
 // bench  (orchestrator)
 // ---------------------------------------------------------------------------
 
-fn cmd_bench(output: &str, filter: Option<&str>, raw: bool, round: u64) {
+fn cmd_bench(output: &str, filter: Option<&str>) {
     if !getrandom_is_patched() {
         eprintln!(
             "warning: getrandom() does not appear to be patched — \
@@ -219,7 +208,7 @@ fn cmd_bench(output: &str, filter: Option<&str>, raw: bool, round: u64) {
 
                 match (cg, store) {
                     (Ok(m), Ok(s)) => {
-                        let instrs = if raw { m.instrs } else { m.instrs / round };
+                        let instrs = m.instrs;
                         eprintln!(
                             "{} instrs  {} store-read  {} store-written",
                             instrs,
