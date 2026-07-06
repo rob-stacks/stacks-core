@@ -548,8 +548,10 @@ impl Snippet {
                 format!("({op} {})", elems.join(" "))
             }
             Snippet::VarLeadUint => {
-                let mut a = vec![format!("u{}", n.max(1) * 1000)];
-                a.extend((1..n.max(1)).map(|_| "u1".to_string()));
+                // Need at least 2 args: unary (- uX) underflows for uint.
+                let n = n.max(2);
+                let mut a = vec![format!("u{}", n * 1000)];
+                a.extend((1..n).map(|_| "u1".to_string()));
                 format!("({op} {})", a.join(" "))
             }
             Snippet::VarLeadInt => {

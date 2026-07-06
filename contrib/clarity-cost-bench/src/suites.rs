@@ -171,7 +171,7 @@ fn src_stacks_block_info(_: u64) -> String {
     "(define-public (bench) (ok (get-stacks-block-info? id-header-hash u0)))".into()
 }
 fn src_tenure_info(_: u64) -> String {
-    "(define-public (bench) (ok (get-tenure-info? time 0x0000000000000000000000000000000000000000000000000000000000000000)))".into()
+    "(define-public (bench) (ok (get-tenure-info? time u0)))".into()
 }
 fn src_burn_block_info(_: u64) -> String {
     "(define-public (bench) (ok (get-burn-block-info? header-hash u0)))".into()
@@ -321,7 +321,7 @@ pub static ALL_SUITES: &[Suite] = &[
             }),
             snip!(Snippet::MapList {
                 elem: ElemType::Uint,
-                fn_name: "to-uint"
+                fn_name: "to-int"
             }),
             snip!(Snippet::MapList {
                 elem: ElemType::OptUint,
@@ -482,10 +482,7 @@ pub static ALL_SUITES: &[Suite] = &[
     suite!("get", &[snip!(Snippet::TupleGet)]),
     suite!("merge", &[snip!(Snippet::TupleMerge)]),
     suite!("hash160", &[snip!(Snippet::ApplyBuf)]),
-    suite!(
-        "sha256",
-        &[snip!(Snippet::ApplyBuf), snip!(Snippet::ApplyStr)]
-    ),
+    suite!("sha256", &[snip!(Snippet::ApplyBuf)]),
     suite!("sha512", &[snip!(Snippet::ApplyBuf)]),
     suite!("sha512/256", &[snip!(Snippet::ApplyBuf)]),
     suite!("keccak256", &[snip!(Snippet::ApplyBuf)]),
@@ -493,29 +490,29 @@ pub static ALL_SUITES: &[Suite] = &[
         "secp256k1-recover?",
         &[snip!(Snippet::Fixed(
             "fixed-inputs",
-            "\
-         0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
-         0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            // hash: (buff 32), signature: (buff 65)
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+             0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
         ))]
     ),
     suite!(
         "secp256k1-verify",
         &[snip!(Snippet::Fixed(
             "fixed-inputs",
-            "\
-         0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
-         0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
-         0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            // hash: (buff 32), signature: (buff 65), public-key: (buff 33)
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+             0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+             0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
         ))]
     ),
     suite!(
         "secp256r1-verify",
         &[snip!(Snippet::Fixed(
             "fixed-inputs",
-            "\
-         0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
-         0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
-         0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            // hash: (buff 32), signature: (buff 64), public-key: (buff 33)
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+             0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+             0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
         ))]
     ),
     suite!(
@@ -611,7 +608,7 @@ pub static ALL_SUITES: &[Suite] = &[
             )),
             snip!(Snippet::Fixed(
                 "contract",
-                "(principal-construct? 0x16 0xfa6bf38ed557fe417333710d6033e9419391a320 \"my-contract\")"
+                "0x16 0xfa6bf38ed557fe417333710d6033e9419391a320 \"my-contract\""
             )),
         ]
     ),
@@ -740,7 +737,8 @@ pub static ALL_SUITES: &[Suite] = &[
         "secp256k1-decompress?",
         &[snip!(Snippet::Fixed(
             "compressed-key",
-            "0x02abababababababababababababababababababababababababababababababababab"
+            // compressed public key: (buff 33) = 0x02 prefix + 32-byte x-coordinate
+            "0x02abababababababababababababababababababababababababababababababab"
         ))]
     ),
 ];
@@ -811,16 +809,11 @@ pub static STATEFUL_SUITES: &[Suite] = &[
         "stx-transfer-memo?",
         &[ctr!(src_stx_transfer_memo, "bench", 1_000_000_000_000)]
     ),
-    suite!("get-block-info?", &[ctr!(src_block_info, "bench", 0)]),
     suite!(
         "get-stacks-block-info?",
         &[ctr!(src_stacks_block_info, "bench", 0)]
     ),
     suite!("get-tenure-info?", &[ctr!(src_tenure_info, "bench", 0)]),
-    suite!(
-        "get-burn-block-info?",
-        &[ctr!(src_burn_block_info, "bench", 0)]
-    ),
     suite!(
         "contract-call?",
         &[ctr!(
