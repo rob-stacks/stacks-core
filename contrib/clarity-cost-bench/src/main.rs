@@ -135,10 +135,35 @@ fn cmd_run(function: &str, variant: &str, size: u64) {
 }
 
 // ---------------------------------------------------------------------------
+// getrandom patch check
+// ---------------------------------------------------------------------------
+
+/// Returns true when getrandom() is patched to always return 0.
+///
+/// With a zero seed every `RandomState` is derived from the same fixed value,
+/// so two independently-created states hash identical inputs to the same
+/// output.  With a real OS seed the two states almost certainly differ.
+fn getrandom_is_patched() -> bool {
+    use std::collections::hash_map::RandomState;
+    use std::hash::{BuildHasher, Hasher};
+    let a = RandomState::new();
+    let b = RandomState::new();
+    a.build_hasher().finish() == b.build_hasher().finish()
+}
+
+// ---------------------------------------------------------------------------
 // bench  (orchestrator)
 // ---------------------------------------------------------------------------
 
 fn cmd_bench(output: &str, filter: Option<&str>, raw: bool, round: u64) {
+    if !getrandom_is_patched() {
+        eprintln!(
+            "warning: getrandom() does not appear to be patched — \
+             instruction counts may vary between runs. \
+             Set LD_PRELOAD to a shim that makes getrandom() return 0."
+        );
+    }
+
     let exe = std::env::current_exe()
         .expect("cannot determine own executable path")
         .to_string_lossy()
