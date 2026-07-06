@@ -46,9 +46,17 @@ pub fn run(
 
 /// Snippets have no backing store — byte counts are always zero.
 fn run_snippet(snippet: &str, iters: u32) -> Result<StoreByteCounts, String> {
+    // Warmup: execute once without counting so that all lazy-init work — regex
+    // DFA compilation, HashMap RandomState seeding — completes before the
+    // callgrind instrumentation window opens.
+    let _ = execute_v6(snippet);
+
+    crate::valgrind::start_instrumentation();
     for _ in 0..iters {
         execute_v6(snippet).map_err(|e| format!("{e:?}"))?;
     }
+    crate::valgrind::stop_instrumentation();
+
     Ok(StoreByteCounts::default())
 }
 
@@ -80,9 +88,19 @@ fn run_contract(
         .map_err(|e| format!("contract deploy error: {e:?}"))?;
     }
 
+    // Warmup: one un-instrumented call so lazy statics (regex DFAs, etc.) are
+    // fully initialized before the callgrind counting window opens.
+    {
+        let db = marf.as_clarity_db();
+        let mut env =
+            OwnedEnvironment::new_free(false, CHAIN_ID_TESTNET, db, StacksEpochId::Epoch40);
+        let _ = env.execute_transaction(sender.clone(), None, contract_id.clone(), fn_name, &[]);
+    }
+
     // Iteration phase: run `fn_name` iters times under the counting store.
     let mut counting = CountingStore::new(&mut marf);
     {
+        crate::valgrind::start_instrumentation();
         let db = counting.as_clarity_db();
         let mut env =
             OwnedEnvironment::new_free(false, CHAIN_ID_TESTNET, db, StacksEpochId::Epoch40);
@@ -90,6 +108,7 @@ fn run_contract(
             env.execute_transaction(sender.clone(), None, contract_id.clone(), fn_name, &[])
                 .map_err(|e| format!("execute_transaction error: {e:?}"))?;
         }
+        crate::valgrind::stop_instrumentation();
     }
 
     Ok(counting.counts())

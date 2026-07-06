@@ -6,6 +6,7 @@ mod coverage;
 mod runner;
 mod snippet;
 mod suites;
+mod valgrind;
 
 use std::collections::HashMap;
 

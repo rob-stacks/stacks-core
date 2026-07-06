@@ -62,6 +62,11 @@ pub fn measure(
             // Ir (instruction count) is fully deterministic and sufficient for
             // cost-function fitting.
             "--quiet",
+            // Instrumentation starts off; runner.rs calls CALLGRIND_START/STOP
+            // around the measured iterations so that one-time lazy-init work
+            // (regex DFA construction, HashMap RandomState seeding, etc.) that
+            // happens in the warmup call is excluded from the counts.
+            "--instr-atstart=no",
             "--",
             exe,
             "run",
