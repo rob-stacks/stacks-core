@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
+use crate::vm::collections::HashMap;
 use std::hash::Hash;
 
 use stacks_common::types::StacksEpochId;
@@ -161,8 +161,8 @@ impl Default for RollbackWrapperPersistedLog {
 impl RollbackWrapperPersistedLog {
     pub fn new() -> RollbackWrapperPersistedLog {
         RollbackWrapperPersistedLog {
-            lookup_map: HashMap::new(),
-            metadata_lookup_map: HashMap::new(),
+            lookup_map: crate::vm::collections::new_map(),
+            metadata_lookup_map: crate::vm::collections::new_map(),
             stack: Vec::new(),
         }
     }
@@ -206,8 +206,8 @@ impl<'a> RollbackWrapper<'a> {
     pub fn new(store: &'a mut dyn ClarityBackingStore) -> RollbackWrapper<'a> {
         RollbackWrapper {
             store,
-            lookup_map: HashMap::new(),
-            metadata_lookup_map: HashMap::new(),
+            lookup_map: crate::vm::collections::new_map(),
+            metadata_lookup_map: crate::vm::collections::new_map(),
             stack: Vec::new(),
             query_pending_data: true,
         }

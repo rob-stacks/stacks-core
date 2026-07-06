@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
+use crate::vm::collections::HashMap;
 use std::{cmp, fmt};
 
 use costs_1::Costs1;
@@ -343,8 +343,8 @@ impl From<SerializedCostStateSummary> for CostStateSummary {
 impl CostStateSummary {
     pub fn empty() -> CostStateSummary {
         CostStateSummary {
-            contract_call_circuits: HashMap::new(),
-            cost_function_references: HashMap::new(),
+            contract_call_circuits: crate::vm::collections::new_map(),
+            cost_function_references: crate::vm::collections::new_map(),
         }
     }
 }
@@ -800,9 +800,9 @@ impl LimitedCostTracker {
         epoch: StacksEpochId,
     ) -> Result<LimitedCostTracker, CostErrors> {
         let mut cost_tracker = TrackerData {
-            cost_function_references: HashMap::new(),
-            cost_contracts: HashMap::new(),
-            contract_call_circuits: HashMap::new(),
+            cost_function_references: crate::vm::collections::new_map(),
+            cost_contracts: crate::vm::collections::new_map(),
+            contract_call_circuits: crate::vm::collections::new_map(),
             limit,
             memory_limit: CLARITY_MEMORY_LIMIT,
             total: ExecutionCost::ZERO,
@@ -824,9 +824,9 @@ impl LimitedCostTracker {
         epoch: StacksEpochId,
     ) -> Result<LimitedCostTracker, CostErrors> {
         let mut cost_tracker = TrackerData {
-            cost_function_references: HashMap::new(),
-            cost_contracts: HashMap::new(),
-            contract_call_circuits: HashMap::new(),
+            cost_function_references: crate::vm::collections::new_map(),
+            cost_contracts: crate::vm::collections::new_map(),
+            contract_call_circuits: crate::vm::collections::new_map(),
             limit,
             memory_limit: CLARITY_MEMORY_LIMIT,
             total: ExecutionCost::ZERO,
@@ -897,7 +897,7 @@ impl LimitedCostTracker {
         let version = DefaultVersion::try_from(false, &boot_costs_id)
             .expect("Failed defining default version!");
 
-        let mut cost_functions = HashMap::new();
+        let mut cost_functions = crate::vm::collections::new_map();
         for each in ClarityCostFunction::ALL {
             let evaluator = ClarityCostFunctionEvaluator::Default(
                 ClarityCostFunctionReference {
@@ -912,8 +912,8 @@ impl LimitedCostTracker {
 
         let cost_tracker = TrackerData {
             cost_function_references: cost_functions,
-            cost_contracts: HashMap::new(),
-            contract_call_circuits: HashMap::new(),
+            cost_contracts: crate::vm::collections::new_map(),
+            contract_call_circuits: crate::vm::collections::new_map(),
             limit,
             memory_limit: CLARITY_MEMORY_LIMIT,
             total: ExecutionCost::ZERO,
@@ -981,8 +981,8 @@ impl TrackerData {
 
         let iter = ClarityCostFunction::ALL.iter();
         let iter_len = iter.len();
-        let mut cost_contracts = HashMap::with_capacity(iter_len);
-        let mut m = HashMap::with_capacity(iter_len);
+        let mut cost_contracts = crate::vm::collections::map_with_capacity(iter_len);
+        let mut m = crate::vm::collections::map_with_capacity(iter_len);
 
         for f in iter {
             let cost_function_ref = cost_function_references.remove(f).unwrap_or_else(|| {

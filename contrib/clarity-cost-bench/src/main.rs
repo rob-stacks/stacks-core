@@ -33,6 +33,9 @@ enum Commands {
         /// Number of snippet repetitions per Callgrind invocation.
         #[arg(short, long, default_value = "100")]
         iters: u32,
+        /// Callgrind invocations per data point; median is reported.
+        #[arg(short, long, default_value = "1")]
+        samples: u32,
     },
     /// Internal: run one (function, variant) under Callgrind — called by `bench`.
     Run {
@@ -72,7 +75,8 @@ fn main() {
             output,
             functions,
             iters,
-        } => cmd_bench(&output, functions.as_deref(), iters),
+            samples,
+        } => cmd_bench(&output, functions.as_deref(), iters, samples),
         Commands::Analyze { input } => cmd_analyze(&input),
     }
 }
@@ -137,7 +141,7 @@ fn cmd_run(function: &str, variant: &str, size: u64, iters: u32) {
 // bench  (orchestrator)
 // ---------------------------------------------------------------------------
 
-fn cmd_bench(output: &str, filter: Option<&str>, iters: u32) {
+fn cmd_bench(output: &str, filter: Option<&str>, iters: u32, samples: u32) {
     let exe = std::env::current_exe()
         .expect("cannot determine own executable path")
         .to_string_lossy()
@@ -189,7 +193,7 @@ fn cmd_bench(output: &str, filter: Option<&str>, iters: u32) {
                     suite.function, case.variant
                 );
 
-                let cg = callgrind::measure(&exe, suite.function, case.variant, size, iters);
+                let cg = callgrind::measure_median(&exe, suite.function, case.variant, size, iters, samples);
                 let store = runner::run(&case.execution, suite.function, size, iters);
 
                 match (cg, store) {

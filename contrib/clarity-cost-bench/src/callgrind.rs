@@ -9,6 +9,32 @@ pub struct Metrics {
     pub instrs: u64,
 }
 
+/// Run callgrind `samples` times and return the median `Ir` count.
+///
+/// `std::collections::HashMap` uses `RandomState` (seeded by `getrandom()`),
+/// so each process produces slightly different probe-chain lengths.  Taking
+/// the median of an odd number of samples cancels one-sided outliers while
+/// keeping bench time proportional to `samples`.
+pub fn measure_median(
+    exe: &str,
+    function: &str,
+    variant: &str,
+    size: u64,
+    iters: u32,
+    samples: u32,
+) -> Result<Metrics, String> {
+    if samples <= 1 {
+        return measure(exe, function, variant, size, iters);
+    }
+    let mut counts: Vec<u64> = (0..samples)
+        .map(|_| measure(exe, function, variant, size, iters).map(|m| m.instrs))
+        .collect::<Result<Vec<_>, _>>()?;
+    counts.sort_unstable();
+    Ok(Metrics {
+        instrs: counts[counts.len() / 2],
+    })
+}
+
 /// Run the tool under callgrind for one (function, variant, size, iters) tuple.
 pub fn measure(
     exe: &str,

@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
+use crate::vm::collections::HashMap;
 
 use clarity_types::ClarityName;
 use clarity_types::types::{AssetIdentifier, PrincipalData, StandardPrincipalData};
@@ -508,7 +508,7 @@ fn check_allowances(
     // Elements are (index in allowances, amount)
     let mut stx_allowances: Vec<(usize, u128)> = Vec::new();
     // Map assets to a vector of (index in allowances, amount)
-    let mut ft_allowances: HashMap<AssetIdentifier, Vec<(usize, u128)>> = HashMap::new();
+    let mut ft_allowances: HashMap<AssetIdentifier, Vec<(usize, u128)>> = crate::vm::collections::new_map();
     // Map assets to a tuple with the first allowance's index and a vector of
     // asset identifiers. We use Vec instead of HashSet because:
     // 1. Most NFT IDs are simple (`uint`s), making Value::eq() very fast
@@ -516,7 +516,7 @@ fn check_allowances(
     // 3. Avoids serialization cost during both setup and lookup phases
     // 4. Simpler implementation with lower memory overhead (no cloning or
     //    space used for serialization)
-    let mut nft_allowances: HashMap<AssetIdentifier, (usize, Vec<Value>)> = HashMap::new();
+    let mut nft_allowances: HashMap<AssetIdentifier, (usize, Vec<Value>)> = crate::vm::collections::new_map();
     // Elements are (index in allowances, amount)
     let mut stacking_allowances: Vec<(usize, u128)> = Vec::new();
     // Index of the first `with-pox` allowance, if any.
