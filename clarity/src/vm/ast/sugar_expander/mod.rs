@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::{HashMap, HashSet};
+use crate::vm::collections::{HashMap, HashSet};
 
 use clarity_types::representations::ClarityName;
 use clarity_types::types::{
@@ -49,8 +49,8 @@ impl SugarExpander {
     fn new(issuer: StandardPrincipalData) -> Self {
         Self {
             issuer,
-            defined_traits: HashSet::new(),
-            imported_traits: HashMap::new(),
+            defined_traits: crate::vm::collections::new_set(),
+            imported_traits: crate::vm::collections::new_map(),
         }
     }
 

@@ -14,7 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
+use crate::vm::collections::{HashMap, HashSet};
 
 use crate::vm::analysis::errors::{StaticCheckError, StaticCheckErrorKind};
 use crate::vm::analysis::types::ContractAnalysis;
@@ -44,16 +45,16 @@ impl Default for ContractContext {
 impl ContractContext {
     pub fn new() -> ContractContext {
         ContractContext {
-            variable_types: HashMap::new(),
-            private_function_types: HashMap::new(),
-            public_function_types: HashMap::new(),
-            read_only_function_types: HashMap::new(),
-            map_types: HashMap::new(),
-            persisted_variable_types: HashMap::new(),
-            fungible_tokens: HashSet::new(),
-            non_fungible_tokens: HashMap::new(),
-            traits: HashMap::new(),
-            implemented_traits: HashSet::new(),
+            variable_types: crate::vm::collections::new_map(),
+            private_function_types: crate::vm::collections::new_map(),
+            public_function_types: crate::vm::collections::new_map(),
+            read_only_function_types: crate::vm::collections::new_map(),
+            map_types: crate::vm::collections::new_map(),
+            persisted_variable_types: crate::vm::collections::new_map(),
+            fungible_tokens: crate::vm::collections::new_set(),
+            non_fungible_tokens: crate::vm::collections::new_map(),
+            traits: crate::vm::collections::new_map(),
+            implemented_traits: crate::vm::collections::new_set(),
         }
     }
 

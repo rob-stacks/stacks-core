@@ -14,7 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
+use crate::vm::collections::{HashMap, HashSet};
 
 use crate::vm::ClarityVersion;
 use crate::vm::analysis::errors::{StaticCheckError, StaticCheckErrorKind};
@@ -40,11 +41,11 @@ impl TraitContext {
     pub fn new(clarity_version: ClarityVersion) -> TraitContext {
         if clarity_version >= ClarityVersion::Clarity2 {
             Self::Clarity2 {
-                defined: HashSet::new(),
-                all: HashMap::new(),
+                defined: crate::vm::collections::new_set(),
+                all: crate::vm::collections::new_map(),
             }
         } else {
-            Self::Clarity1(HashMap::new())
+            Self::Clarity1(crate::vm::collections::new_map())
         }
     }
 
@@ -147,16 +148,16 @@ impl ContractContext {
         ContractContext {
             clarity_version,
             contract_identifier,
-            variable_types: HashMap::new(),
-            private_function_types: HashMap::new(),
-            public_function_types: HashMap::new(),
-            read_only_function_types: HashMap::new(),
-            map_types: HashMap::new(),
-            persisted_variable_types: HashMap::new(),
-            fungible_tokens: HashSet::new(),
-            non_fungible_tokens: HashMap::new(),
+            variable_types: crate::vm::collections::new_map(),
+            private_function_types: crate::vm::collections::new_map(),
+            public_function_types: crate::vm::collections::new_map(),
+            read_only_function_types: crate::vm::collections::new_map(),
+            map_types: crate::vm::collections::new_map(),
+            persisted_variable_types: crate::vm::collections::new_map(),
+            fungible_tokens: crate::vm::collections::new_set(),
+            non_fungible_tokens: crate::vm::collections::new_map(),
             traits: TraitContext::new(clarity_version),
-            implemented_traits: HashSet::new(),
+            implemented_traits: crate::vm::collections::new_set(),
         }
     }
 

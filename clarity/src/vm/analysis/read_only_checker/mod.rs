@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
+use crate::vm::collections::HashMap;
 
 use clarity_types::representations::ClarityName;
 use clarity_types::types::{PrincipalData, Value};
@@ -80,7 +80,7 @@ impl<'a, 'b> ReadOnlyChecker<'a, 'b> {
     ) -> ReadOnlyChecker<'a, 'b> {
         Self {
             db,
-            defined_functions: HashMap::new(),
+            defined_functions: crate::vm::collections::new_map(),
             epoch: *epoch,
             clarity_version: *version,
             time_tracker,

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::{HashMap, HashSet};
+use crate::vm::collections::{HashMap, HashSet};
 
 use stacks_common::types::StacksEpochId;
 
@@ -53,9 +53,9 @@ pub struct TypingContext<'a> {
 impl TypeMap {
     pub fn new(build_map: bool) -> TypeMap {
         let map = if build_map {
-            TypeMapDataType::Map(HashMap::new())
+            TypeMapDataType::Map(crate::vm::collections::new_map())
         } else {
-            TypeMapDataType::Set(HashSet::new())
+            TypeMapDataType::Set(crate::vm::collections::new_set())
         };
         TypeMap { map }
     }
@@ -100,8 +100,8 @@ impl TypingContext<'_> {
         TypingContext {
             epoch,
             clarity_version,
-            variable_types: HashMap::new(),
-            traits_references: HashMap::new(),
+            variable_types: crate::vm::collections::new_map(),
+            traits_references: crate::vm::collections::new_map(),
             depth: 0,
             parent: None,
         }
@@ -116,8 +116,8 @@ impl TypingContext<'_> {
             Ok(TypingContext {
                 epoch: self.epoch,
                 clarity_version: self.clarity_version,
-                variable_types: HashMap::new(),
-                traits_references: HashMap::new(),
+                variable_types: crate::vm::collections::new_map(),
+                traits_references: crate::vm::collections::new_map(),
                 parent: Some(self),
                 depth: self.depth + 1,
             })

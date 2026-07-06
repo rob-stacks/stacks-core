@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::{HashMap, HashSet};
+use crate::vm::collections::{HashMap, HashSet};
 
 use clarity_types::representations::ClarityName;
 
@@ -42,7 +42,7 @@ pub struct DefinitionSorter {
 impl DefinitionSorter {
     fn new() -> Self {
         Self {
-            top_level_expressions_map: HashMap::new(),
+            top_level_expressions_map: crate::vm::collections::new_map(),
             graph: Graph::new(),
         }
     }
@@ -459,7 +459,7 @@ struct GraphWalker {
 impl GraphWalker {
     fn new() -> Self {
         Self {
-            seen: HashSet::new(),
+            seen: crate::vm::collections::new_set(),
         }
     }
 
@@ -507,7 +507,7 @@ impl GraphWalker {
         graph: &Graph,
         sorted_indexes: &[usize],
     ) -> Option<Vec<usize>> {
-        let mut tainted: HashSet<usize> = HashSet::new();
+        let mut tainted: HashSet<usize> = crate::vm::collections::new_set();
 
         for node in sorted_indexes.iter() {
             let mut tainted_descendants_count = 0;

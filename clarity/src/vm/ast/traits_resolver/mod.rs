@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::HashMap;
+use crate::vm::collections::HashMap;
 
 use clarity_types::representations::ClarityName;
 use clarity_types::types::{QualifiedContractIdentifier, TraitIdentifier};
@@ -50,7 +50,7 @@ impl TraitsResolver {
 
     #[cfg_attr(test, mutants::skip)]
     pub fn run(&mut self, contract_ast: &mut ContractAST) -> ParseResult<()> {
-        let mut referenced_traits = HashMap::new();
+        let mut referenced_traits = crate::vm::collections::new_map();
 
         for exp in contract_ast.pre_expressions.iter() {
             // Top-level comment nodes have been filtered from `args` by `try_parse_pre_expr`.
