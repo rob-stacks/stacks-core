@@ -30,6 +30,12 @@ enum Commands {
         /// Comma-separated function names to benchmark (default: all benchmarkable).
         #[arg(short, long)]
         functions: Option<String>,
+        /// Report raw instruction counts with no divisor applied.
+        #[arg(long)]
+        raw: bool,
+        /// Divide instruction counts by this value before reporting (default: 1000).
+        #[arg(long, default_value = "1000")]
+        round: u64,
     },
     /// Internal: run one (function, variant) under Callgrind — called by `bench`.
     Run {
@@ -65,7 +71,9 @@ fn main() {
         Commands::Bench {
             output,
             functions,
-        } => cmd_bench(&output, functions.as_deref()),
+            raw,
+            round,
+        } => cmd_bench(&output, functions.as_deref(), raw, round),
         Commands::Analyze { input } => cmd_analyze(&input),
     }
 }
@@ -130,11 +138,7 @@ fn cmd_run(function: &str, variant: &str, size: u64) {
 // bench  (orchestrator)
 // ---------------------------------------------------------------------------
 
-fn round1k(x: u64) -> u64 {
-    (x + 500) / 1000 * 1000
-}
-
-fn cmd_bench(output: &str, filter: Option<&str>) {
+fn cmd_bench(output: &str, filter: Option<&str>, raw: bool, round: u64) {
     let exe = std::env::current_exe()
         .expect("cannot determine own executable path")
         .to_string_lossy()
@@ -190,7 +194,7 @@ fn cmd_bench(output: &str, filter: Option<&str>) {
 
                 match (cg, store) {
                     (Ok(m), Ok(s)) => {
-                        let instrs = round1k(m.instrs);
+                        let instrs = if raw { m.instrs } else { m.instrs / round };
                         eprintln!(
                             "{} instrs  {} store-read  {} store-written",
                             instrs,
