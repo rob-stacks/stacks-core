@@ -72,6 +72,22 @@ pub struct Fit {
     pub r2: f64,
 }
 
+impl Fit {
+    /// Evaluate the fit at a given n, returning the predicted y value.
+    pub fn eval(&self, n: f64) -> f64 {
+        let x = match self.complexity {
+            Complexity::Constant => 1.0,
+            Complexity::Logarithmic => n.max(1.0).ln(),
+            Complexity::SquareRoot => n.sqrt(),
+            Complexity::Linear => n,
+            Complexity::NLogN => n * n.max(1.0).ln(),
+            Complexity::Quadratic => n * n,
+            Complexity::PowerLaw { k } => n.powf(k),
+        };
+        self.a * x + self.b
+    }
+}
+
 fn linreg(x: &[f64], y: &[f64]) -> (f64, f64) {
     let n = x.len() as f64;
     let sx: f64 = x.iter().sum();
@@ -169,6 +185,22 @@ pub fn select_model(sizes: &[u64], counts: &[u64]) -> Vec<Fit> {
     fits
 }
 
+// ── max supported n per dimension ────────────────────────────────────────────
+
+/// Return the largest value `n` can legally take for a given dimension.
+/// Used to extrapolate fits and formula values beyond the bench sample range.
+pub fn max_n_for_unit(n_unit: &str) -> Option<u64> {
+    match n_unit {
+        // clarity-types/src/types/mod.rs: MAX_VALUE_SIZE = 1024 * 1024
+        "buffer_bytes" | "value_bytes" => Some(1_048_576),
+        // clarity-types/src/representations.rs: MAX_STRING_LEN = 128
+        "string_chars" => Some(128),
+        // MAX_VALUE_SIZE / 1 (bool element = 1 byte, smallest possible element)
+        "list_length" => Some(1_048_576),
+        _ => None,
+    }
+}
+
 // ── report ────────────────────────────────────────────────────────────────────
 
 fn fmt_delta(d: i64) -> String {
@@ -181,7 +213,7 @@ fn fmt_delta(d: i64) -> String {
     }
 }
 
-fn metric_block(label: &str, sizes: &[u64], counts: &[u64], n_unit: &str) {
+fn metric_block(label: &str, sizes: &[u64], counts: &[u64], n_unit: &str, max_n: Option<u64>) {
     if sizes.len() < 2 {
         return;
     }
@@ -206,11 +238,21 @@ fn metric_block(label: &str, sizes: &[u64], counts: &[u64], n_unit: &str) {
     } else {
         println!("  │  fit: {}  R²={:.4}  ≈ {:.1}", w.complexity, w.r2, w.b);
     }
+    if let Some(n_max) = max_n {
+        if n_max > *sizes.last().unwrap_or(&0) {
+            let predicted = w.eval(n_max as f64).round() as u64;
+            let ratio = predicted as f64 / base.max(1.0);
+            println!(
+                "  │  fit at n={n_max} (max): {predicted}  (ratio vs n=1: {ratio:.1}×)"
+            );
+        }
+    }
     println!("  └─");
 }
 
 pub fn print_report(g: &Group, instrs_per_cost_unit: Option<f64>) {
     let spec = cost_model::for_function(&g.function);
+    let max_n = max_n_for_unit(&g.n_unit);
 
     println!("\n══════════════════════════════════════════════════════════════════════");
     println!(" Function : {} / {}", g.function, g.variant);
@@ -231,6 +273,9 @@ pub fn print_report(g: &Group, instrs_per_cost_unit: Option<f64>) {
     }
     if let Some(ipu) = instrs_per_cost_unit {
         println!(" Baseline : 1 cost unit ≈ {ipu:.0} instructions  (calibrated from +/uint)");
+    }
+    if let Some(n_max) = max_n {
+        println!(" Max n    : {n_max} (largest value {}'s dimension can take)", g.n_unit);
     }
 
     // ── cost comparison table ───────────────────────────────────────────────
@@ -257,16 +302,38 @@ pub fn print_report(g: &Group, instrs_per_cost_unit: Option<f64>) {
                 fmt_delta(delta)
             );
         }
+
+        // extrapolation row at max n (when max is beyond the measured range)
+        if let Some(n_max) = max_n {
+            if n_max > *g.sizes.last().unwrap_or(&0) {
+                let fits = select_model(&g.sizes, &g.instrs);
+                let best_fit = &fits[0];
+                let predicted_instrs = best_fit.eval(n_max as f64).max(0.0);
+                let suggested_at_max = (predicted_instrs / ipu).round() as u64;
+                let current_at_max = (spec.eval)(n_max);
+                let delta_at_max = suggested_at_max as i64 - current_at_max as i64;
+                println!("──── extrapolation ({}) ──────────────────────────────────────────", best_fit.complexity);
+                println!(
+                    "  {:>10}  {:>14}  {:>12}  {:>11}  {:>8}",
+                    n_max,
+                    format!("~{:.0}", predicted_instrs),
+                    current_at_max,
+                    suggested_at_max,
+                    fmt_delta(delta_at_max)
+                );
+            }
+        }
     }
 
     println!("──────────────────────────────────────────────────────────────────────");
-    metric_block("instrs/call", &g.sizes, &g.instrs, &g.n_unit);
-    metric_block("store-bytes-read/call", &g.sizes, &g.bytes_read, &g.n_unit);
+    metric_block("instrs/call", &g.sizes, &g.instrs, &g.n_unit, max_n);
+    metric_block("store-bytes-read/call", &g.sizes, &g.bytes_read, &g.n_unit, max_n);
     metric_block(
         "store-bytes-written/call",
         &g.sizes,
         &g.bytes_written,
         &g.n_unit,
+        max_n,
     );
     println!("══════════════════════════════════════════════════════════════════════");
 }

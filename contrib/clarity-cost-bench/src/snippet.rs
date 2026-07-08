@@ -423,19 +423,26 @@ impl Snippet {
         match self {
             Snippet::Fixed(_, _) | Snippet::XorPair | Snippet::XorPairInt => &[1],
 
+            // consensus-buff ops need larger range to observe O(n·log n) growth
+            Snippet::ToConsensusBuf | Snippet::FromConsensusBuf => {
+                &[1, 64, 256, 1024, 4096, 16384, 65536]
+            }
+
+            // buffers: no semantic cap below MAX_VALUE_SIZE (1 MiB); test up to 65536
             Snippet::ApplyBuf
             | Snippet::TwoHalfBuf
             | Snippet::TwoBuf
             | Snippet::SliceBuf
             | Snippet::ReplaceAtBuf
             | Snippet::AsMaxLenBuf
-            | Snippet::ToConsensusBuf
-            | Snippet::FromConsensusBuf
-            | Snippet::GetBitcoinTxOutput
-            | Snippet::Ed25519Verify
             | Snippet::ElementAtBuf
             | Snippet::IndexOfBuf
-            | Snippet::ApplyStr
+            | Snippet::GetBitcoinTxOutput
+            | Snippet::Ed25519Verify => &[1, 64, 256, 1024, 4096, 16384, 65536],
+
+            // strings: Clarity string-ascii/utf8 values can be larger than MAX_STRING_LEN (128),
+            // which only applies to identifier names; keep current range
+            Snippet::ApplyStr
             | Snippet::TwoHalfStr
             | Snippet::TwoStr
             | Snippet::SliceStr
@@ -464,7 +471,9 @@ impl Snippet {
 
             Snippet::BuffToInt => &[1, 2, 4, 8, 16],
 
-            Snippet::StringToIntAscii | Snippet::StringToIntUtf8 => &[1, 2, 4, 8, 16, 20],
+            // string-to-int?/uint?: MAX_STRING_LEN=128; beyond ~39 chars always returns none
+            // but we want to observe cost behaviour for long strings too
+            Snippet::StringToIntAscii | Snippet::StringToIntUtf8 => &[1, 4, 16, 32, 64, 128],
 
             Snippet::TupleOf(_) | Snippet::TupleGet | Snippet::TupleMerge | Snippet::LetUint => {
                 &[1, 2, 4, 8, 16, 32]
@@ -515,8 +524,8 @@ impl Snippet {
             Snippet::SliceStr => format!("({op} {} u0 u{})", astr(n), n / 2),
             Snippet::ReplaceAtBuf => format!("({op} {} u0 0xcc)", buf(n)),
             Snippet::ReplaceAtStr => format!("({op} {} u0 \"z\")", astr(n)),
-            Snippet::AsMaxLenBuf => format!("({op} {} u1024)", buf(n)),
-            Snippet::AsMaxLenStr => format!("({op} {} u1024)", astr(n)),
+            Snippet::AsMaxLenBuf => format!("({op} {} u{})", buf(n), n),
+            Snippet::AsMaxLenStr => format!("({op} {} u{})", astr(n), n),
             Snippet::ElementAtBuf => format!("({op} {} u0)", buf(n)),
             Snippet::ElementAtStr => format!("({op} {} u0)", astr(n)),
             Snippet::IndexOfBuf => format!("({op} {} 0xcc)", buf(n)), // 0xcc not in all-0xab buf
@@ -595,16 +604,17 @@ impl Snippet {
             // conversions
             Snippet::BuffToInt => format!("({op} {})", buf(n.min(16))),
             Snippet::StringToIntAscii => {
-                format!("({op} \"{}\")", "1".repeat(n.min(20).max(1) as usize))
+                // MAX_STRING_LEN = 128; beyond ~39 chars the parse returns none but cost is still charged
+                format!("({op} \"{}\")", "1".repeat(n.min(128).max(1) as usize))
             }
             Snippet::StringToIntUtf8 => {
-                format!("({op} u\"{}\")", "1".repeat(n.min(20).max(1) as usize))
+                format!("({op} u\"{}\")", "1".repeat(n.min(128).max(1) as usize))
             }
             Snippet::ToConsensusBuf => format!("({op} {})", buf(n)),
             Snippet::FromConsensusBuf => {
-                let len_be = format!("{:08x}", n.min(255));
-                let data = "aa".repeat(n.min(255) as usize);
-                format!("({op} (buff {}) 0x02{len_be}{data})", n.min(255))
+                let len_be = format!("{:08x}", n);
+                let data = "aa".repeat(n as usize);
+                format!("({op} (buff {n}) 0x02{len_be}{data})")
             }
 
             // misc
