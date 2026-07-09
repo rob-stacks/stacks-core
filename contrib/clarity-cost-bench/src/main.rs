@@ -1,6 +1,5 @@
 mod analysis;
 mod callgrind;
-mod cost_model;
 mod counting_store;
 mod coverage;
 mod runner;
@@ -290,11 +289,12 @@ fn cmd_analyze(input: &str) {
     }
 
     // Calibrate from the + / uint group (must happen before printing).
+    // cost_add(N) = linear(N, 11, 125) = 11N + 125 — stable across all epochs.
     let instrs_per_cost_unit = analysis::calibrate_from_plus(&groups);
     if let Some(ipu) = instrs_per_cost_unit {
         println!("Calibration: 1 cost unit ≈ {ipu:.0} instructions  (derived from +/uint)");
     } else {
-        println!("Note: no +/uint data found — cost comparison columns will be omitted.");
+        println!("Note: no +/uint data found — suggested cost column will be omitted.");
     }
 
     let mut keys: Vec<_> = groups.keys().cloned().collect();

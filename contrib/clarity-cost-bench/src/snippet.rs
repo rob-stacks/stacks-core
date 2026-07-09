@@ -520,8 +520,8 @@ impl Snippet {
             Snippet::TwoBuf => format!("({op} {} {})", buf(n), buf(n)),
             Snippet::TwoStr => format!("({op} {} {})", astr(n), astr(n)),
 
-            Snippet::SliceBuf => format!("({op} {} u0 u{})", buf(n), n / 2),
-            Snippet::SliceStr => format!("({op} {} u0 u{})", astr(n), n / 2),
+            Snippet::SliceBuf => format!("({op} {} u0 u{})", buf(n), n),
+            Snippet::SliceStr => format!("({op} {} u0 u{})", astr(n), n),
             Snippet::ReplaceAtBuf => format!("({op} {} u0 0xcc)", buf(n)),
             Snippet::ReplaceAtStr => format!("({op} {} u0 \"z\")", astr(n)),
             Snippet::AsMaxLenBuf => format!("({op} {} u{})", buf(n), n),
@@ -541,7 +541,7 @@ impl Snippet {
             Snippet::AppendList(e) => format!("({op} {} {})", e.list(n), e.lit()),
             Snippet::ElementAtList(e) => format!("({op} {} u0)", e.list(n)),
             Snippet::IndexOfList(e) => format!("({op} {} {})", e.list(n), e.index_of_target(n)),
-            Snippet::SliceList(e) => format!("({op} {} u0 u{})", e.list(n), n / 2),
+            Snippet::SliceList(e) => format!("({op} {} u0 u{})", e.list(n), n),
             Snippet::ReplaceAtList(e) => format!("({op} {} u0 {})", e.list(n), e.lit()),
             Snippet::AsMaxLenList(e) => format!("({op} {} u2000)", e.list(n)),
 

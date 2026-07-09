@@ -1,5 +1,3 @@
-use crate::cost_model;
-
 pub struct Group {
     pub function: String,
     pub variant: String,
@@ -12,12 +10,13 @@ pub struct Group {
 
 // ── calibration ──────────────────────────────────────────────────────────────
 
-/// Compute `instructions_per_cost_unit` from the `+` / uint benchmark.
-/// Uses weighted average: Σ instrs / Σ model_cost across all data points.
+/// Derive `instructions_per_cost_unit` from the `+/uint` benchmark.
+///
+/// `(+ u0 u1 … u{n-1})` with N arguments charges `cost_add(N) = linear(N, 11, 125) = 11N + 125`
+/// in all Clarity epochs.  We use a weighted average: Σ instrs / Σ model_cost.
 pub fn calibrate_from_plus(
     groups: &std::collections::HashMap<(String, String), Group>,
 ) -> Option<f64> {
-    let spec = cost_model::for_function("+")?;
     let group = groups
         .get(&("+".into(), "uint".into()))
         .or_else(|| groups.get(&("+".into(), "int".into())))?;
@@ -26,7 +25,7 @@ pub fn calibrate_from_plus(
         .sizes
         .iter()
         .zip(group.instrs.iter())
-        .map(|(&n, &i)| (i as f64, (spec.eval)(n) as f64))
+        .map(|(&n, &i)| (i as f64, (11 * n + 125) as f64))
         .filter(|(_, c)| *c > 0.0)
         .fold((0.0, 0.0), |(si, sc), (i, c)| (si + i, sc + c));
 
@@ -188,7 +187,7 @@ pub fn select_model(sizes: &[u64], counts: &[u64]) -> Vec<Fit> {
 // ── max supported n per dimension ────────────────────────────────────────────
 
 /// Return the largest value `n` can legally take for a given dimension.
-/// Used to extrapolate fits and formula values beyond the bench sample range.
+/// Used to extrapolate fits beyond the bench sample range.
 pub fn max_n_for_unit(n_unit: &str) -> Option<u64> {
     match n_unit {
         // clarity-types/src/types/mod.rs: MAX_VALUE_SIZE = 1024 * 1024
@@ -202,16 +201,6 @@ pub fn max_n_for_unit(n_unit: &str) -> Option<u64> {
 }
 
 // ── report ────────────────────────────────────────────────────────────────────
-
-fn fmt_delta(d: i64) -> String {
-    if d == 0 {
-        "  0".into()
-    } else if d > 0 {
-        format!(" +{d}")
-    } else {
-        format!(" {d}")
-    }
-}
 
 fn metric_block(label: &str, sizes: &[u64], counts: &[u64], n_unit: &str, max_n: Option<u64>) {
     if sizes.len() < 2 {
@@ -251,7 +240,6 @@ fn metric_block(label: &str, sizes: &[u64], counts: &[u64], n_unit: &str, max_n:
 }
 
 pub fn print_report(g: &Group, instrs_per_cost_unit: Option<f64>) {
-    let spec = cost_model::for_function(&g.function);
     let max_n = max_n_for_unit(&g.n_unit);
 
     println!("\n══════════════════════════════════════════════════════════════════════");
@@ -265,12 +253,6 @@ pub fn print_report(g: &Group, instrs_per_cost_unit: Option<f64>) {
             .collect::<Vec<_>>()
             .join(", ")
     );
-
-    if let Some(s) = spec {
-        println!(" Current  : runtime = {}", s.formula);
-    } else {
-        println!(" Current  : (SpecialFunction — no exported runtime cost)");
-    }
     if let Some(ipu) = instrs_per_cost_unit {
         println!(" Baseline : 1 cost unit ≈ {ipu:.0} instructions  (calibrated from +/uint)");
     }
@@ -278,29 +260,17 @@ pub fn print_report(g: &Group, instrs_per_cost_unit: Option<f64>) {
         println!(" Max n    : {n_max} (largest value {}'s dimension can take)", g.n_unit);
     }
 
-    // ── cost comparison table ───────────────────────────────────────────────
-    if spec.is_some() && instrs_per_cost_unit.is_some() {
-        let ipu = instrs_per_cost_unit.unwrap();
-        let spec = spec.unwrap();
-
+    // ── per-point table ─────────────────────────────────────────────────────
+    if let Some(ipu) = instrs_per_cost_unit {
         println!("──────────────────────────────────────────────────────────────────────");
         println!(
-            "  {:>10}  {:>14}  {:>12}  {:>11}  {:>8}",
-            g.n_unit, "instrs/call", "current cost", "suggested", "Δ"
+            "  {:>10}  {:>14}  {:>11}",
+            g.n_unit, "instrs/call", "suggested"
         );
 
         for (&n, &instrs) in g.sizes.iter().zip(g.instrs.iter()) {
-            let current = (spec.eval)(n);
             let suggested = (instrs as f64 / ipu).round() as u64;
-            let delta = suggested as i64 - current as i64;
-            println!(
-                "  {:>10}  {:>14}  {:>12}  {:>11}  {:>8}",
-                n,
-                instrs,
-                current,
-                suggested,
-                fmt_delta(delta)
-            );
+            println!("  {:>10}  {:>14}  {:>11}", n, instrs, suggested);
         }
 
         // extrapolation row at max n (when max is beyond the measured range)
@@ -310,16 +280,15 @@ pub fn print_report(g: &Group, instrs_per_cost_unit: Option<f64>) {
                 let best_fit = &fits[0];
                 let predicted_instrs = best_fit.eval(n_max as f64).max(0.0);
                 let suggested_at_max = (predicted_instrs / ipu).round() as u64;
-                let current_at_max = (spec.eval)(n_max);
-                let delta_at_max = suggested_at_max as i64 - current_at_max as i64;
-                println!("──── extrapolation ({}) ──────────────────────────────────────────", best_fit.complexity);
                 println!(
-                    "  {:>10}  {:>14}  {:>12}  {:>11}  {:>8}",
+                    "──── extrapolation ({}) ──────────────────────────────────────────",
+                    best_fit.complexity
+                );
+                println!(
+                    "  {:>10}  {:>14}  {:>11}",
                     n_max,
                     format!("~{:.0}", predicted_instrs),
-                    current_at_max,
                     suggested_at_max,
-                    fmt_delta(delta_at_max)
                 );
             }
         }
