@@ -236,28 +236,36 @@ pub static ALL_SUITES: &[Suite] = &[
         ">=",
         &[
             snip!(Snippet::Fixed("uint", "u10 u5")),
-            snip!(Snippet::Fixed("int", "10 5"))
+            snip!(Snippet::Fixed("int", "10 5")),
+            snip!(Snippet::TwoStr),
+            snip!(Snippet::TwoBuf),
         ]
     ),
     suite!(
         "<=",
         &[
             snip!(Snippet::Fixed("uint", "u5 u10")),
-            snip!(Snippet::Fixed("int", "5 10"))
+            snip!(Snippet::Fixed("int", "5 10")),
+            snip!(Snippet::TwoStr),
+            snip!(Snippet::TwoBuf),
         ]
     ),
     suite!(
         "<",
         &[
             snip!(Snippet::Fixed("uint", "u5 u10")),
-            snip!(Snippet::Fixed("int", "5 10"))
+            snip!(Snippet::Fixed("int", "5 10")),
+            snip!(Snippet::TwoStr),
+            snip!(Snippet::TwoBuf),
         ]
     ),
     suite!(
         ">",
         &[
             snip!(Snippet::Fixed("uint", "u10 u5")),
-            snip!(Snippet::Fixed("int", "10 5"))
+            snip!(Snippet::Fixed("int", "10 5")),
+            snip!(Snippet::TwoStr),
+            snip!(Snippet::TwoBuf),
         ]
     ),
     suite!(
